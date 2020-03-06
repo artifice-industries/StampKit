@@ -14,7 +14,7 @@ protocol SKBrowserDelegate {
     func browser(_: SKBrowser, didUpdateServers servers: Set<SKServer>)
 }
 
-class SKBrowser: NSObject {
+public class SKBrowser: NSObject {
     
     var netServiceDomainsBrowser: NetServiceBrowser?
     var netServiceTCPBrowser: NetServiceBrowser?
