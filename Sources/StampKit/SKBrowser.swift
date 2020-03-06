@@ -113,7 +113,7 @@ public class SKBrowser: NSObject {
 
 extension SKBrowser: NetServiceBrowserDelegate {
     
-    func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {
+    public func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {
         if browser == netServiceDomainsBrowser {
             os_log("Starting Bonjour - browsable domains search", log: .browser, type: .info)
         } else if browser == netServiceTCPBrowser {
@@ -126,7 +126,7 @@ extension SKBrowser: NetServiceBrowserDelegate {
         delegate?.browser(self, didUpdateServers: servers)
     }
     
-    func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
+    public func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
         if browser == netServiceDomainsBrowser {
             os_log("Stopping Bonjour - browsable domains search", log: .browser, type: .info)
         } else if browser == netServiceTCPBrowser {
@@ -147,14 +147,14 @@ extension SKBrowser: NetServiceBrowserDelegate {
         delegate?.browser(self, didUpdateServers: servers)
     }
     
-    func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
+    public func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
         os_log("netSeviceBrowser.didNotSearch: %{PUBLIC}@", log: .browser, type: .info, browser.description)
         for error in errorDict {
             os_log("error: %{PUBLIC}@", log: .browser, type: .info, error.value)
         }
     }
     
-    func netServiceBrowser(_ browser: NetServiceBrowser, didFindDomain domainString: String, moreComing: Bool) {
+    public func netServiceBrowser(_ browser: NetServiceBrowser, didFindDomain domainString: String, moreComing: Bool) {
         os_log("netSeviceBrowser.didFindDomain: %{PUBLIC}@ moreComing: %{PUBLIC}@", log: .browser, type: .info, domainString, moreComing)
         guard netServiceTCPBrowser == nil, domainString == StampKitBonjourServiceDomain else { return }
         netServiceTCPBrowser = NetServiceBrowser()
@@ -162,7 +162,7 @@ extension SKBrowser: NetServiceBrowserDelegate {
         netServiceTCPBrowser?.searchForServices(ofType: StampKitBonjourTCPServiceType, inDomain: StampKitBonjourServiceDomain)
     }
     
-    func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
+    public func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
         os_log("netSeviceBrowser.didFindService: %{PUBLIC}@ moreComing: %{PUBLIC}@", log: .browser, type: .info, service.description, moreComing)
         service.delegate = self
         services.insert(service)
@@ -171,7 +171,7 @@ extension SKBrowser: NetServiceBrowserDelegate {
         setNeedsBeginResolvingNetServices()
     }
     
-    func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
+    public func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
         os_log("netSeviceBrowser.didRemoveService: %{PUBLIC}@ moreComing: %{PUBLIC}@", log: .browser, type: .info, service.description, moreComing)
         
         guard let server = server(for: service) else { return }
@@ -188,7 +188,7 @@ extension SKBrowser: NetServiceBrowserDelegate {
 
 extension SKBrowser: NetServiceDelegate {
     
-    func netServiceDidResolveAddress(_ sender: NetService) {
+    public func netServiceDidResolveAddress(_ sender: NetService) {
         os_log("netSevice.didResolveAddress: %{PUBLIC}@", log: .browser, type: .info, sender.description)
         guard sender.port > 0 else { return }
         
@@ -219,7 +219,7 @@ extension SKBrowser: NetServiceDelegate {
         server.refreshTimelines()
     }
     
-    func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
+    public func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
         sender.stop()
         sender.delegate = nil
         services.remove(sender)
