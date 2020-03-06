@@ -24,6 +24,10 @@ public class SKBrowser: NSObject {
     var running: Bool = false
     var refreshTimer: Timer?
     
+    public override init() {
+        super.init()
+    }
+    
     deinit {
         stop()
     }
