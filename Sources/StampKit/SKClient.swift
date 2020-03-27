@@ -30,6 +30,11 @@ class SKClient {
         client.delegate = self
     }
     
+    convenience init(with host: String, port: UInt16, useTCP: Bool) {
+        self.init(with: host, port: port)
+        client.useTCP = useTCP
+    }
+    
     func connect() -> Bool {
         do {
             try client.connect()
@@ -41,6 +46,7 @@ class SKClient {
     
     func disconnect() {
         client.disconnect()
+        client.delegate = nil
     }
     
     internal func useTCP() {
@@ -76,17 +82,18 @@ extension SKClient: OSCClientDelegate {
         print("Client Did Disconnect")
     }
     
+    
 }
 
 extension SKClient: OSCPacketDestination {
     
-    func take(message: OSCMessage) {
-        // Called on the client.socketDelegateQueue thread
-        process(message: message)
+    func take(bundle: OSCBundle) {
+        print("Received Bundle \(bundle.timeTag)")
     }
     
-    func take(bundle: OSCBundle) {
-        print("Take Bundle: \(bundle.timeTag)")
+    func take(message: OSCMessage) {
+        let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
+        print("Received Message: \(annotation)")
     }
-      
+    
 }

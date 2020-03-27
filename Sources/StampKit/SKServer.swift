@@ -27,9 +27,8 @@ class SKServer: NSObject {
     let port: Int
 
     // Create a private client that we'll use for querying the list of timelines on the Stamp server.
-    convenience init(host: String, port: Int) {
-        let client = SKClient(with: host, port: port)
-        client.useTCP()
+    convenience init(host: String, port: UInt16) {
+        let client = SKClient(with: host, port: port, useTCP: true)
         self.init(host: host, port: port, client: client)
     }
     

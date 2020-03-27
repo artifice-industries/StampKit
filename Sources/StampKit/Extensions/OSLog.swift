@@ -16,5 +16,4 @@ extension OSLog {
     static let browser = OSLog(subsystem: subsystem, category: "Browser")
     static let server = OSLog(subsystem: subsystem, category: "Server")
     static let client = OSLog(subsystem: subsystem, category: "Client")
-    
 }
