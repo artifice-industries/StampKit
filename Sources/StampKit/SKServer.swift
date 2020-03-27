@@ -60,7 +60,7 @@ class SKServer: NSObject {
     internal func update(timelines: [[String: AnyObject]]) {
         var newTimelines: Set<SKTimeline> = []
         for dictionary in timelines {
-            guard let uniqueID = dictionary[SKOSCUIDKey] as? String else { continue }
+            guard let uniqueID = dictionary[SKOSCKeys.uniqueID.rawValue] as? String else { continue }
             if let existingTimeline = timeline(with: uniqueID) {
                 newTimelines.insert(existingTimeline)
                 _ = existingTimeline.update(with: dictionary)
@@ -79,13 +79,12 @@ class SKServer: NSObject {
             return
         }
     
-        client.sendMessage(with: "/workspaces", arguments: [], timeline: false, completionHandler: { [weak self] completionHandler in
+        client.sendMessage(with: "/\(SKAddressParts.timelines.rawValue)", arguments: [], timeline: false, completionHandler: { [weak self] completionHandler in
             guard let strongSelf = self else { return }
             guard let timelineUpdates = completionHandler as? [[String: AnyObject]] else { return }
             
             strongSelf.update(timelines: timelineUpdates)
         })
-        
         
     }
     
@@ -96,7 +95,7 @@ class SKServer: NSObject {
             return
         }
         
-        client.sendMessage(with: "/workspaces", arguments: [], timeline: false, completionHandler: { [weak self] data in
+        client.sendMessage(with: "/\(SKAddressParts.timelines.rawValue)", arguments: [], timeline: false, completionHandler: { [weak self] data in
             guard let strongSelf = self else { return }
             guard let timelineUpdates = data as? [[String: AnyObject]] else { return }
             

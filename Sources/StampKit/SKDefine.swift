@@ -19,6 +19,22 @@ let StampKitTxPortNumber: Int = 24602
 typealias SKCompletionHandler = (AnyObject) -> Void
 
 // OSC key constants
-let SKOSCUIDKey = "uniqueID"
-let SKOSCDisplayNameKey = "displayName"
-let SKOSCHasPasscodeKey = "hasPasscode"
+enum SKOSCKeys: String {
+    case uniqueID = "uniqueID"
+    case displayName = "displayName"
+    case hasPasscodeKey = "hasPasscode"
+}
+
+// Address Pattern Parts
+enum SKAddressParts: String {
+    case timelines = "timelines"
+    case timeline = "timeline"
+}
+
+// Heartbeat
+enum SKHeartbeat: Int {
+    case interval = 5
+    case failureInterval = 1
+    case maxAttemptys = 5
+}
+
