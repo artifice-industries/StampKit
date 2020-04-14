@@ -2,118 +2,209 @@
 //  SKServer.swift
 //  StampKit
 //
-//  Created by Sam Smallman on 22/02/2020.
+//  Created by Sam Smallman on 01/03/2020.
 //  Copyright © 2020 Artifice Industries Ltd. All rights reserved.
 //
 
 import Foundation
+import OSCKit
 import os.log
 
-protocol SKServerDelegate {
-    func serverDidUpdateTimelines(server: SKServer)
+public protocol SKServerDelegate {
+    func server(_: SKServer, didUpdateTimelines: [SKTimelineDescription])
+    func server(_: SKServer, didUpdateConnectedClients clients: [SKClientFacade], toTimeline timeline: SKTimelineDescription)
+    func server(_: SKServer, didReceiveMessage message: OSCMessage, withTimeline timeline: SKTimelineDescription)
+    func server(_: SKServer, didReceiveMessage message: OSCMessage, forTimelines timelines: [SKTimelineDescription])
 }
 
-class SKServer: NSObject {
-    
-    var isConnected: Bool { get { return client.isConnected } }
-    var timelines: Set<SKTimeline> = []
-    var delegate: SKServerDelegate?
-    var refreshTimer: Timer?
-    var service: NetService?
-    var name: String
-    
-    let client: SKClient
-    let host: String
-    let port: Int
+public enum SKServerStatus: String {
+    case online
+}
 
-    // Create a private client that we'll use for querying the list of timelines on the Stamp server.
-    convenience init(host: String, port: UInt16) {
-        let client = SKClient(with: host, port: port, useTCP: true)
-        self.init(host: host, port: port, client: client)
-    }
+final public class SKServer: NSObject {
     
-    init(host: String, port: Int, client: SKClient) {
-        self.host = host
-        self.port = port == 0 ? StampKitTxPortNumber : port
-        self.name = host
-        self.service = nil
-        self.client = client
+    public private(set) var timelines: [SKTimelineDescription] = [] { didSet { delegate?.server(self, didUpdateTimelines:timelines) } }
+    private let publisher: SKPublisher
+    private let server: OSCServer
+    public private(set) var status: SKServerStatus = .online
+    public private(set) var connections: [String : [SKClientFacade]]
+    
+    public var delegate: SKServerDelegate?
+    
+    public override init() {
+        publisher = SKPublisher()
+        server = OSCServer()
+        server.port = UInt16(StampKitPortNumber)
+        connections = [:]
     }
     
     deinit {
         stop()
     }
     
-    internal func stop() {
-        disableAutoRefresh()
-        client.disconnect()
-        timelines.removeAll()
+    public func start() {
+        publisher.publish()
+        server.delegate = self
+        do {
+            try server.startListening()
+        } catch let error as NSError {
+            os_log("Error: %{public}@", log: .server, type: .error, error.localizedDescription)
+        }
     }
     
-    // MARK:- Timelines
-    
-    private func timeline(with uniqueID: String) -> SKTimeline? {
-        return timelines.first(where: { $0.uniqueID == uniqueID })
+    public func stop() {
+        publisher.stop()        
     }
     
-    internal func update(timelines: [[String: AnyObject]]) {
-        var newTimelines: Set<SKTimeline> = []
-        for dictionary in timelines {
-            guard let uniqueID = dictionary[SKOSCKeys.uniqueID.rawValue] as? String else { continue }
-            if let existingTimeline = timeline(with: uniqueID) {
-                newTimelines.insert(existingTimeline)
-                _ = existingTimeline.update(with: dictionary)
+    public func add(timeline: SKTimelineDescription) {
+        if timelines.contains(timeline), let index = timelines.firstIndex(of: timeline) {
+            timelines[index] = timeline
+        } else {
+            timelines.append(timeline)
+        }
+    }
+    
+    public func remove(timeline: SKTimelineDescription) {
+        if timelines.contains(timeline), let index = timelines.firstIndex(of: timeline) {
+            timelines.remove(at: index)
+        }
+    }
+    
+    public func change(timeline:SKTimelineDescription, name: String) {
+        if timelines.contains(timeline), let index = timelines.firstIndex(of: timeline), timeline.name != name {
+            let newTimeline = SKTimelineDescription(name: name, uuid: timeline.uuid, andPassword: timeline.password)
+            timelines[index] = newTimeline
+        }
+    }
+    
+    public func change(timeline: SKTimelineDescription, password: String) {
+        if timelines.contains(timeline), let index = timelines.firstIndex(of: timeline), timeline.password != password {
+            let newTimeline = SKTimelineDescription(name: timeline.name, uuid: timeline.uuid, andPassword: password)
+            timelines[index] = newTimeline
+        }
+    }
+    
+    public func timeline(withUUID uuid: String) -> SKTimelineDescription? {
+        return timelines.first(where: { $0.uuid.uuidString == uuid })
+    }
+    
+    func process(message: OSCMessage) {
+        switch message.type {
+        case .timelines:
+            timelines(with: message)
+        case .connect:
+            connect(with: message)
+        case .disconnect:
+            disconnect(with: message)
+        case .unknown:
+            // The message is referencing a timeline
+            if let uuid = message.uuid(), let clients = connections[uuid], let socket = message.replySocket {
+                // 1. Validate authorisation
+                if clients.contains(where: { $0.hasSocket(socket: socket) }) {
+                    guard let timelineDescription = timelines.first(where: { $0.uuid.uuidString == uuid }) else { return }
+                    delegate?.server(self, didReceiveMessage: message, withTimeline: timelineDescription)
+                } else {
+                    // TODO: Reply with some unathorised message.
+                }
             } else {
-                let timeline = SKTimeline(with: dictionary, andServer: self)
-                newTimelines.insert(timeline)
+                // First get all the unsecured timelines.
+                var securedTimelines = self.timelines.filter( { $0.hasPassword == false })
+                if let socket = message.replySocket {
+                    let client = SKClientFacade(socket: socket)
+                    // Add the authorised connections for this client to the timelines array.
+                    let connnectedConnections = connections.filter( { $0.value.contains(where: { $0 == client} )})
+                    var connectedTimelines = self.timelines.filter( { timeline in connnectedConnections.keys.contains(where: { timeline.uuid.uuidString == $0 } )})
+                    // Remove repeated timelines.
+                    connectedTimelines = connectedTimelines.filter( { !securedTimelines.contains($0)})
+                    securedTimelines.append(contentsOf: connectedTimelines)
+                }
+                delegate?.server(self, didReceiveMessage: message, forTimelines: securedTimelines)
+            }
+            default: break
+        }
+        
+    }
+    
+    private func jsonString(addressPattern: String, data: SKData) -> String {
+        do {
+            let packet = SKPacket(status: status.rawValue, addressPattern: addressPattern, version: "1.0.0", data: data)
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(packet)
+            return String(data: data, encoding: .utf8) ?? ""
+        } catch {
+            return ""
+        }
+    }
+    
+    private func timelines(with message: OSCMessage) {
+        guard let socket = message.replySocket else { return }
+        let string = jsonString(addressPattern: message.addressPattern, data: .timelines(timelines))
+        let message = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.reply.rawValue)\(SKAddressParts.timelines.rawValue)", arguments: [string])
+        socket.sendTCP(packet: message, withStreamFraming: .SLIP)
+    }
+    
+    private func connect(with message: OSCMessage) {
+        guard let socket = message.replySocket, let uuid = message.uuid(), let timeline = timeline(withUUID: uuid) else { return }
+        
+        // 1. Authorise
+        if timeline.hasPassword {
+            guard message.arguments.count == 1, let password = message.arguments[0] as? String, password == timeline.password else {
+                let string = jsonString(addressPattern: message.addressPattern, data: .connect(SKStatusDescription(status: SKTimelinePassword.unauthorised.rawValue, uuid: timeline.uuid)))
+                let reply = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.reply.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
+                socket.sendTCP(packet: reply, withStreamFraming: .SLIP)
+                return
             }
         }
-        self.timelines = newTimelines
-        delegate?.serverDidUpdateTimelines(server: self)
-    }
-    
-    @objc internal func refreshTimelines() {
-        guard !client.isConnected && !client.connect() else {
-            os_log("Error - SKServer unable to connect to to Stamp server: %{PUBLIC}@, %{PUBLIC}@:%{PUBLIC}@", log: .server, type: .info, self.host, "\(self.port)")
-            return
-        }
-    
-        client.sendMessage(with: "/\(SKAddressParts.timelines.rawValue)", arguments: [], timeline: false, completionHandler: { [weak self] completionHandler in
-            guard let strongSelf = self else { return }
-            guard let timelineUpdates = completionHandler as? [[String: AnyObject]] else { return }
-            
-            strongSelf.update(timelines: timelineUpdates)
-        })
         
-    }
-    
-    internal func refresh(withCompletionHandler completionHandler: @escaping SKCompletionHandler) {
-        
-        guard !client.isConnected && !client.connect() else {
-            os_log("Error - SKServer unable to connect to to Stamp server: %{PUBLIC}@, %{PUBLIC}@:%{PUBLIC}@", log: .server, type: .info, self.host, "\(self.port)")
-            return
+        // 2. Update Connections
+        let client = SKClientFacade(socket: socket)
+        if var clients = connections[uuid] {
+            if clients.contains(where: { $0 == client }), let index = clients.firstIndex(of: client) {
+                clients[index] = client
+            } else {
+                clients.append(client)
+            }
+            connections[uuid] = clients
+        } else {
+            connections[uuid] = [client]
         }
+        tidyConnections()
         
-        client.sendMessage(with: "/\(SKAddressParts.timelines.rawValue)", arguments: [], timeline: false, completionHandler: { [weak self] data in
-            guard let strongSelf = self else { return }
-            guard let timelineUpdates = data as? [[String: AnyObject]] else { return }
-            
-            strongSelf.update(timelines: timelineUpdates)
-            
-            completionHandler(strongSelf.timelines as AnyObject)
-        })
-
+        // 3. Return Authorisation Message
+        let string = jsonString(addressPattern: message.addressPattern, data: .connect(SKStatusDescription(status: SKTimelinePassword.authorised.rawValue, uuid: timeline.uuid)))
+        let reply = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.reply.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
+        socket.sendTCP(packet: reply, withStreamFraming: .SLIP)
+        delegate?.server(self, didUpdateConnectedClients: connections[uuid] ?? [], toTimeline: timeline)
     }
     
-    internal func enableAutoRefresh(with interval: TimeInterval) {
-        if refreshTimer == nil {
-            refreshTimer = Timer(timeInterval: interval, target: self, selector: #selector(refreshTimelines), userInfo: nil, repeats: true)
+    private func disconnect(with message: OSCMessage) {
+        guard let socket = message.replySocket, let uuid = message.uuid(), let timeline = timeline(withUUID: uuid) else { return }
+        let client = SKClientFacade(socket: socket)
+        if var clients = connections[uuid] {
+            clients.removeAll(where: { $0 == client })
+            connections[uuid] = clients
         }
+        tidyConnections()
+        delegate?.server(self, didUpdateConnectedClients: connections[uuid] ?? [], toTimeline: timeline)
     }
     
-    internal func disableAutoRefresh() {
-        refreshTimer?.invalidate()
-        refreshTimer = nil
+    private func tidyConnections() {
+        connections.forEach( { connections[$0.key] = $0.value.filter( { $0.isConnected == true }) })
+        connections = connections.filter( { !$0.value.isEmpty})
     }
     
 }
+
+// MARK: - OSC Packet Destination Delegates
+extension SKServer: OSCPacketDestination {
+    
+    public func take(bundle: OSCBundle) {
+        os_log("Received Bundle with Timetag: %{public}@", log: .server, type: .info, "\(bundle.timeTag)")
+    }
+    
+    public func take(message: OSCMessage) {
+        process(message: message)
+    }
+    
+}
+

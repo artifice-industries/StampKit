@@ -14,6 +14,10 @@ extension OSLog {
     private static var subsystem = Bundle.main.bundleIdentifier!
     
     static let browser = OSLog(subsystem: subsystem, category: "Browser")
-    static let server = OSLog(subsystem: subsystem, category: "Server")
     static let client = OSLog(subsystem: subsystem, category: "Client")
+    static let publisher = OSLog(subsystem: subsystem, category: "Publisher")
+    static let server = OSLog(subsystem: subsystem, category: "Server")
+    static let serverFacade = OSLog(subsystem: subsystem, category: "Server Facade")
+    static let timeline = OSLog(subsystem: subsystem, category: "Timeline")
+    
 }

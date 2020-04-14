@@ -10,31 +10,44 @@ import Foundation
 
 // MARK: Bonjour (mDNS) Constants
 let StampKitBonjourTCPServiceType: String = "_stamp._tcp."
-let StampKitBonjourUDPServiceType: String = "_stamp._udp."
 let StampKitBonjourServiceDomain: String = "local."
-let StampKitRxPortNumber: Int = 24601
-let StampKitTxPortNumber: Int = 24602
+let StampKitPortNumber: Int = 24601
+
+// MARK:- Heartbeat
+let StampKitHeartbeatMaxAttempts: Int = 5
+let StampKitHeartbeatInterval: TimeInterval = 5
+let StampKitHeartbeatFailureInterval: TimeInterval = 1
+
+// MARK:- SKTimelineDescription
+let StampKitPasswordRequired: String = "SKPASSWORDREQUIRED"
+
+// MARK:- SKStatusDescription
+enum SKConnectionStatus: String {
+    case authorised
+    case unauthorised
+}
 
 // Blocks
-typealias SKCompletionHandler = (AnyObject) -> Void
+public typealias SKTimelineHandler = (SKTimeline) -> Void
+public typealias SKCompletionHandler = (SKData) -> Void
 
-// OSC key constants
-enum SKOSCKeys: String {
-    case uniqueID = "uniqueID"
-    case displayName = "displayName"
-    case hasPasscodeKey = "hasPasscode"
-}
-
-// Address Pattern Parts
+// MARK:- Address Pattern Parts
 enum SKAddressParts: String {
-    case timelines = "timelines"
-    case timeline = "timeline"
+    case application = ""
+    case reply = "/reply"
+    case update = "/update"
+    case timelines = "/timelines"
+    case timeline = "/timeline"
+    case connect = "/connect"
+    case disconnect = "/disconnect"
+    case updates = "/updates"
+    case heartbeat = "/thump"
 }
 
-// Heartbeat
-enum SKHeartbeat: Int {
-    case interval = 5
-    case failureInterval = 1
-    case maxAttemptys = 5
+// MARK:- Timeline Password
+enum SKTimelinePassword: String {
+    case authorised
+    case unauthorised
 }
+
 
