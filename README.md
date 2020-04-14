@@ -1,5 +1,4 @@
 # StampKit
-
 > Communicate with Stamp servers from remote devices.
 
 ## Overview
