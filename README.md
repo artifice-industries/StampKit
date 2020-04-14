@@ -1,3 +1,6 @@
+<p align="center">
+    <img src="stampkit-icon.png" width="181" max-width="90%" alt=“StampKit” />
+</p>
 # StampKit
 Communicate with Stamp servers from remote devices.
 
