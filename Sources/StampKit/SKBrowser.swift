@@ -9,20 +9,24 @@
 import Foundation
 import os.log
 
-protocol SKBrowserDelegate {
-    func browser(_: SKBrowser, didUpdateTimelinesForServer server: SKServer)
-    func browser(_: SKBrowser, didUpdateServers servers: Set<SKServer>)
+public protocol SKBrowserDelegate {
+    func browser(_: SKBrowser, didUpdateTimelinesForServer server: SKServerFacade)
+    func browser(_: SKBrowser, didUpdateServers servers: Set<SKServerFacade>)
 }
 
-class SKBrowser: NSObject {
+public final class SKBrowser: NSObject {
     
-    var netServiceDomainsBrowser: NetServiceBrowser?
-    var netServiceTCPBrowser: NetServiceBrowser?
-    var services: Set<NetService> = []
-    var delegate: SKBrowserDelegate?
-    var servers: Set<SKServer> = []
-    var running: Bool = false
-    var refreshTimer: Timer?
+    private var netServiceDomainsBrowser: NetServiceBrowser?
+    private var netServiceTCPBrowser: NetServiceBrowser?
+    private var services: Set<NetService> = []
+    public var delegate: SKBrowserDelegate?
+    public var servers: Set<SKServerFacade> = []
+    private var running: Bool = false
+    private var refreshTimer: Timer?
+    
+    public override init() {
+        super.init()
+    }
     
     deinit {
         stop()
@@ -30,9 +34,9 @@ class SKBrowser: NSObject {
     
     public func start() {
         if running {
-            os_log("Starting Browser - already running", log: .browser, type: .info)
+            os_log("Starting (already running)", log: .browser, type: .info)
         } else {
-            os_log("Starting Browser", log: .browser, type: .info)
+            os_log("Starting", log: .browser, type: .info)
         }
         
         if !running {
@@ -43,8 +47,7 @@ class SKBrowser: NSObject {
     }
     
     public func stop() {
-        
-        disableAutoRefresh()
+        stopRefreshTimer()
         netServiceDomainsBrowser?.stop()
         netServiceTCPBrowser?.stop()
         
@@ -62,14 +65,15 @@ class SKBrowser: NSObject {
         servers.forEach( { $0.refreshTimelines() })
     }
     
-    func enableAutoRefresh(with interval: TimeInterval) {
+    public func refresh(every timeInterval: TimeInterval) {
         if refreshTimer == nil {
-            refreshTimer = Timer(timeInterval: interval, target: self, selector: #selector(refreshTimelines(timer:)), userInfo: nil, repeats: true)
-            refreshTimer?.tolerance = interval * 0.1
+            refreshTimer = Timer(timeInterval: timeInterval, target: self, selector: #selector(refreshTimelines(timer:)), userInfo: nil, repeats: true)
+            refreshTimer!.tolerance = timeInterval * 0.1
+            RunLoop.current.add(refreshTimer!, forMode: .common)
         }
     }
     
-    private func disableAutoRefresh() {
+    private func stopRefreshTimer() {
         refreshTimer?.invalidate()
         refreshTimer = nil
     }
@@ -91,17 +95,17 @@ class SKBrowser: NSObject {
     @objc func beginResolvingNetServices() {
         // Resolving a service could resolve immediately, changing the services array. As such make a copy of the services to iterate over.
         let netServices = services
-        for service in netServices {
-            guard let addresses = service.addresses, !addresses.isEmpty else { continue }
+        
+        for service in netServices where service.addresses != nil {
             service.resolve(withTimeout: 5.0)
         }
     }
     
-    func server(for service: NetService) -> SKServer? {
-        return servers.first(where: { $0.service === service })
+    func server(for service: NetService) -> SKServerFacade? {
+        return servers.first(where: { $0.service == service })
     }
     
-    func server(for hostName: String) -> SKServer? {
+    func server(for hostName: String) -> SKServerFacade? {
         return servers.first(where: { $0.service?.hostName == hostName })
     }
     
@@ -109,26 +113,26 @@ class SKBrowser: NSObject {
 
 extension SKBrowser: NetServiceBrowserDelegate {
     
-    func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {
+    public func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {
         if browser == netServiceDomainsBrowser {
-            os_log("Starting Bonjour - browsable domains search", log: .browser, type: .info)
+            os_log("Will Search: Domains", log: .browser, type: .info)
         } else if browser == netServiceTCPBrowser {
-            os_log("Starting Bonjour (TCP) - %{PUBLIC}@", log: .browser, type: .info, StampKitBonjourServiceDomain)
+            os_log("Will Search TCP Service: %{PUBLIC}@", log: .browser, type: .info, StampKitBonjourTCPServiceType)
         } else {
-            os_log("netServiceBrowserWillSearch: %{PUBLIC}@", log: .browser, type: .info, browser.description)
+            os_log("Will Search: %{PUBLIC}@", log: .browser, type: .info, browser.description)
         }
         
         running = browser == netServiceDomainsBrowser
         delegate?.browser(self, didUpdateServers: servers)
     }
     
-    func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
+    public func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
         if browser == netServiceDomainsBrowser {
             os_log("Stopping Bonjour - browsable domains search", log: .browser, type: .info)
         } else if browser == netServiceTCPBrowser {
             os_log("Stopping Bonjour (TCP) - %{PUBLIC}@", log: .browser, type: .info, StampKitBonjourServiceDomain)
         } else {
-            os_log("netServiceBrowserDidStopSearch: %{PUBLIC}@", log: .browser, type: .info, browser.description)
+            os_log("Stopped Search: %{PUBLIC}@", log: .browser, type: .info, browser.description)
         }
         
         if browser == netServiceDomainsBrowser {
@@ -143,23 +147,23 @@ extension SKBrowser: NetServiceBrowserDelegate {
         delegate?.browser(self, didUpdateServers: servers)
     }
     
-    func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
-        os_log("netSeviceBrowser.didNotSearch: %{PUBLIC}@", log: .browser, type: .info, browser.description)
+    public func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String : NSNumber]) {
+        os_log("Didn't Search: %{PUBLIC}@", log: .browser, type: .info, browser.description)
         for error in errorDict {
-            os_log("error: %{PUBLIC}@", log: .browser, type: .info, error.value)
+            os_log("Error: %{PUBLIC}@", log: .browser, type: .info, error.value)
         }
     }
     
-    func netServiceBrowser(_ browser: NetServiceBrowser, didFindDomain domainString: String, moreComing: Bool) {
-        os_log("netSeviceBrowser.didFindDomain: %{PUBLIC}@ moreComing: %{PUBLIC}@", log: .browser, type: .info, domainString, moreComing)
+    public func netServiceBrowser(_ browser: NetServiceBrowser, didFindDomain domainString: String, moreComing: Bool) {
+        os_log("Found Domain: %{PUBLIC}@ moreComing: %{PUBLIC}@", log: .browser, type: .info, domainString, "\(moreComing)")
         guard netServiceTCPBrowser == nil, domainString == StampKitBonjourServiceDomain else { return }
         netServiceTCPBrowser = NetServiceBrowser()
         netServiceTCPBrowser?.delegate = self
         netServiceTCPBrowser?.searchForServices(ofType: StampKitBonjourTCPServiceType, inDomain: StampKitBonjourServiceDomain)
     }
     
-    func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
-        os_log("netSeviceBrowser.didFindService: %{PUBLIC}@ moreComing: %{PUBLIC}@", log: .browser, type: .info, service.description, moreComing)
+    public func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService, moreComing: Bool) {
+        os_log("Found Service: %{PUBLIC}@ moreComing: %{PUBLIC}@", log: .browser, type: .info, service.description, "\(moreComing)")
         service.delegate = self
         services.insert(service)
         
@@ -167,8 +171,8 @@ extension SKBrowser: NetServiceBrowserDelegate {
         setNeedsBeginResolvingNetServices()
     }
     
-    func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
-        os_log("netSeviceBrowser.didRemoveService: %{PUBLIC}@ moreComing: %{PUBLIC}@", log: .browser, type: .info, service.description, moreComing)
+    public func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
+        os_log("Removed Service: %{PUBLIC}@ moreComing: %{PUBLIC}@", log: .browser, type: .info, service.description, "\(moreComing)")
         
         guard let server = server(for: service) else { return }
         server.stop()
@@ -184,8 +188,8 @@ extension SKBrowser: NetServiceBrowserDelegate {
 
 extension SKBrowser: NetServiceDelegate {
     
-    func netServiceDidResolveAddress(_ sender: NetService) {
-        os_log("netSevice.didResolveAddress: %{PUBLIC}@", log: .browser, type: .info, sender.description)
+    public func netServiceDidResolveAddress(_ sender: NetService) {
+        os_log("Resolved Address: %{PUBLIC}@", log: .browser, type: .info, sender.description)
         guard sender.port > 0 else { return }
         
         var hostName = sender.hostName
@@ -197,7 +201,8 @@ extension SKBrowser: NetServiceDelegate {
         
         guard let name = hostName else { return }
         
-        let server = SKServer(host: name, port: sender.port)
+        let server = SKServerFacade(host: name, port: sender.port)
+        server.name = sender.name
         server.delegate = self
         server.service = sender
         
@@ -205,21 +210,23 @@ extension SKBrowser: NetServiceDelegate {
         sender.delegate = nil
         services.remove(sender)
         
+        os_log("Inserting Server: %{PUBLIC}@", log: .browser, type: .info, server.description)
+        
         servers.insert(server)
         
         DispatchQueue.main.async { [weak self] in
-           guard let strongSelf = self else { return }
+            guard let strongSelf = self else { return }
             strongSelf.delegate?.browser(strongSelf, didUpdateServers: strongSelf.servers)
         }
         
         server.refreshTimelines()
     }
     
-    func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
+    public func netService(_ sender: NetService, didNotResolve errorDict: [String : NSNumber]) {
         sender.stop()
         sender.delegate = nil
         services.remove(sender)
-        os_log("netSevice.didNotResolve: %{PUBLIC}@", log: .browser, type: .info, sender.description)
+        os_log("Didn't Resolve: %{PUBLIC}@", log: .browser, type: .info, sender.description)
     }
     
     private func resolveIPv4(addresses: [Data]) -> String? {
@@ -249,9 +256,9 @@ extension SKBrowser: NetServiceDelegate {
     
 }
 
-extension SKBrowser: SKServerDelegate {
+extension SKBrowser: SKServerFacadeDelegate {
     
-    func serverDidUpdateTimelines(server: SKServer) {
+    func serverDidUpdateTimelines(server: SKServerFacade) {
         
         DispatchQueue.main.async { [weak self] in
             guard let strongSelf = self else { return }
