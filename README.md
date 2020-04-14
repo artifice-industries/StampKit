@@ -7,4 +7,4 @@ The StampKit package provides the classes needed for your apps to communicate wi
 ## Installation
 Add the following packages to your project by using Xcodes Swift Package Manager: 
 - StampKit: git@github.com:artifice-industries/StampKit.git
-- OSCKit: git@github:SammyTheHand/OSCKit.git
+- OSCKit: git@github.com:SammyTheHand/OSCKit.git
