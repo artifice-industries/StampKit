@@ -1,5 +1,5 @@
 # StampKit
-> Communicate with Stamp servers from remote devices.
+Communicate with Stamp servers from remote devices.
 
 ## Overview
 The StampKit package provides the classes needed for your apps to communicate with Stamp using it's [Open Sound Control](http://opensoundcontrol.org/introduction-osc) (OSC) API.
@@ -8,5 +8,5 @@ The StampKit package provides the classes needed for your apps to communicate wi
 
 ## Installation
 Add the following packages to your project by using Xcodes Swift Package Manager: 
-- StampKit: git@github.com:artifice-industries/StampKit.git
-- OSCKit: git@github.com:SammyTheHand/OSCKit.git
+- StampKit: https://github.com/artifice-industries/StampKit
+- OSCKit: https://github.com/SammyTheHand/OSCKit
