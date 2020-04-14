@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="stampkit-icon.png" width="181" max-width="90%" alt=“StampKit” />
+    <img src="stampkit-icon.png" width="1024" alt=“StampKit” />
 </p>
 
 # StampKit
