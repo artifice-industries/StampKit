@@ -11,6 +11,7 @@ import Foundation
 public enum SKData {
     case timelines([SKTimelineDescription])
     case connect(SKStatusDescription)
+    case note(SKNoteDescription)
     case empty
 }
 
@@ -41,6 +42,9 @@ extension SKPacket: Codable {
         case _ where addressPattern.hasSuffix(SKAddressParts.connect.rawValue):
             let payload = try container.decode(SKStatusDescription.self, forKey: .data)
             self.data = .connect(payload)
+        case _ where addressPattern.hasSuffix(SKAddressParts.note.rawValue):
+            let payload = try container.decode(SKNoteDescription.self, forKey: .data)
+            self.data = .note(payload)
         default: self.data = .empty
         }
     }
@@ -57,6 +61,8 @@ extension SKPacket: Codable {
             try containter.encode(timelines, forKey: .data)
         case .connect(let status):
             try containter.encode(status, forKey: .data)
+        case .note(let note):
+            try containter.encode(note, forKey: .data)
         case .empty: break
         }
         

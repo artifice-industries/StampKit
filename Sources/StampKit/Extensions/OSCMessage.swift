@@ -16,6 +16,7 @@ extension OSCMessage {
         case timelines
         case connect
         case disconnect
+        case note
         case update
         case unknown
     }
@@ -24,14 +25,16 @@ extension OSCMessage {
         get {
             if self.isReply {
                 return .reply
-            } else if self.isUpdate {
-                return .update
             } else if self.isTimelines {
                 return .timelines
             } else if self.isConnect {
                 return .connect
             } else if self.isDisconnect {
                 return .disconnect
+            } else if self.isNote {
+                return .note
+            } else if self.isUpdate {
+                return .update
             } else {
                 return .unknown
             }
@@ -74,37 +77,45 @@ extension OSCMessage {
     // MARK:- Timelines
     // /stamp/timelines
     private var isTimelines: Bool {
-        get {
-            return self.addressPattern == "\(SKAddressParts.application.rawValue)\(SKAddressParts.timelines.rawValue)"
-        }
+        return self.addressPattern == "\(SKAddressParts.application.rawValue)\(SKAddressParts.timelines.rawValue)"
     }
     
-    // stamp/{Unique ID}/connect
+    // /stamp/timeline/{Unique ID}/connect
     private var isConnect: Bool {
         return addressParts.count == 3 && addressParts[2] == SKAddressParts.connect.rawValue.dropFirst()
     }
     
-    // stamp/{Unique ID}/disconnect
+    // /stamp/timeline/{Unique ID}/disconnect
     private var isDisconnect: Bool {
         return addressParts.count == 3 && addressParts[2] == SKAddressParts.disconnect.rawValue.dropFirst()
     }
     
+    // /stamp/timeline/{Unique ID}/note or /stamp/note and needs atleast one string argument.
+    private var isNote: Bool {
+        guard arguments.count >= 1, arguments[0] is String else { return false }
+        return addressPattern.hasSuffix(SKAddressParts.note.rawValue)
+    }
+    
     // MARK:- Helper Methods
     
-    public func replyAddress() -> String {
+    public func address() -> String {
         let startIndex = self.addressPattern.index(self.addressPattern.startIndex, offsetBy: "\(SKAddressParts.application.rawValue)\(SKAddressParts.reply.rawValue)".count)
         return isReply ? String(self.addressPattern[startIndex...]) : self.addressPattern
     }
+    
+    public func replyAddress() -> String {
+        return "\(SKAddressParts.application.rawValue)\(SKAddressParts.reply.rawValue)\(addressPattern)"
+    }
 
     public func addressWithoutTimeline(timelineID: String? = nil) -> String {
-        let address = replyAddress()
-        guard let uniqueID = timelineID else { return address }
+        let oldAddress = address()
+        guard let uniqueID = timelineID else { return oldAddress }
         let timelinePrefix = "\(SKAddressParts.timeline.rawValue)/\(uniqueID)"
-        if address.hasPrefix(timelinePrefix) {
-            let startIndex = address.index(address.startIndex, offsetBy: timelinePrefix.count)
-            return String(address[startIndex...])
+        if oldAddress.hasPrefix(timelinePrefix) {
+            let startIndex = oldAddress.index(oldAddress.startIndex, offsetBy: timelinePrefix.count)
+            return String(oldAddress[startIndex...])
         } else {
-            return address
+            return oldAddress
         }
     }
     

@@ -89,7 +89,7 @@ public final class SKTimeline: NSObject {
                 }
             }
             guard let completion = completionHandler else { return }
-            completion(self!)
+            completion(strongSelf)
         })
     }
     
@@ -175,6 +175,16 @@ public final class SKTimeline: NSObject {
     
     public func send(message: OSCMessage) {
         client.send(message: message)
+    }
+    
+    public func send(note: String, withColour colour: SKNoteColour, completionHandler: SKNoteHandler? = nil) {
+        os_log("Sending Note: %{PUBLIC}@", log: .timeline, type: .info, note)
+        client.sendMessage(with: SKAddressParts.note.rawValue, arguments: [note, colour.rawValue], completionHandler: { data in
+            guard case .note(let description) = data else { return }
+            guard let completion = completionHandler else { return }
+            os_log("Receiving Note Reply: %{PUBLIC}@", log: .timeline, type: .info, description.note)
+            completion(description)
+        })
     }
     
 }

@@ -13,8 +13,8 @@ import os.log
 public protocol SKServerDelegate {
     func server(_: SKServer, didUpdateTimelines: [SKTimelineDescription])
     func server(_: SKServer, didUpdateConnectedClients clients: [SKClientFacade], toTimeline timeline: SKTimelineDescription)
-    func server(_: SKServer, didReceiveMessage message: OSCMessage, withTimeline timeline: SKTimelineDescription)
     func server(_: SKServer, didReceiveMessage message: OSCMessage, forTimelines timelines: [SKTimelineDescription])
+    func statusCode(for client: SKClientFacade, sendingMessage message: OSCMessage, toServer server: SKServer, forTimelines timelines: [SKTimelineDescription]) -> SKResponseStatusCode
 }
 
 public enum SKServerStatus: String {
@@ -90,39 +90,40 @@ final public class SKServer: NSObject {
     
     func process(message: OSCMessage) {
         switch message.type {
-        case .timelines:
-            timelines(with: message)
-        case .connect:
-            connect(with: message)
-        case .disconnect:
-            disconnect(with: message)
+        case .timelines:    timelines(with: message)
+        case .connect:      connect(with: message)
+        case .disconnect:   disconnect(with: message)
+        case .note:         note(with: message)
         case .unknown:
-            // The message is referencing a timeline
-            if let uuid = message.uuid(), let clients = connections[uuid], let socket = message.replySocket {
-                // 1. Validate authorisation
-                if clients.contains(where: { $0.hasSocket(socket: socket) }) {
-                    guard let timelineDescription = timelines.first(where: { $0.uuid.uuidString == uuid }) else { return }
-                    delegate?.server(self, didReceiveMessage: message, withTimeline: timelineDescription)
-                } else {
-                    // TODO: Reply with some unathorised message.
-                }
-            } else {
-                // First get all the unsecured timelines.
-                var securedTimelines = self.timelines.filter( { $0.hasPassword == false })
-                if let socket = message.replySocket {
-                    let client = SKClientFacade(socket: socket)
-                    // Add the authorised connections for this client to the timelines array.
-                    let connnectedConnections = connections.filter( { $0.value.contains(where: { $0 == client} )})
-                    var connectedTimelines = self.timelines.filter( { timeline in connnectedConnections.keys.contains(where: { timeline.uuid.uuidString == $0 } )})
-                    // Remove repeated timelines.
-                    connectedTimelines = connectedTimelines.filter( { !securedTimelines.contains($0)})
-                    securedTimelines.append(contentsOf: connectedTimelines)
-                }
-                delegate?.server(self, didReceiveMessage: message, forTimelines: securedTimelines)
-            }
+            switch timelinesAuthorised(for: message) {
+            case (true, let descriptions) where !descriptions.isEmpty :
+                delegate?.server(self, didReceiveMessage: message, forTimelines: descriptions)
             default: break
+            }
+        default: break
         }
-        
+    }
+    
+    private func timelinesAuthorised(for message: OSCMessage) -> (authorisation: Bool, timelines: [SKTimelineDescription]) {
+        // The message is referencing a timeline
+        if let uuid = message.uuid(), let clients = connections[uuid], let socket = message.replySocket {
+            // 1. Validate authorisation
+            guard clients.contains(where: { $0.hasSocket(socket: socket) }), let timelineDescription = timelines.first(where: { $0.uuid.uuidString == uuid }) else { return (false, []) }
+                return (true, [timelineDescription])
+        } else {
+            // First get all the unsecured timelines.
+            var securedTimelines = self.timelines.filter( { $0.hasPassword == false })
+            if let socket = message.replySocket {
+                let client = SKClientFacade(socket: socket)
+                // Add the authorised connections for this client to the timelines array.
+                let connnectedConnections = connections.filter( { $0.value.contains(where: { $0 == client} )})
+                var connectedTimelines = self.timelines.filter( { timeline in connnectedConnections.keys.contains(where: { timeline.uuid.uuidString == $0 } )})
+                // Remove repeated timelines.
+                connectedTimelines = connectedTimelines.filter( { !securedTimelines.contains($0)})
+                securedTimelines.append(contentsOf: connectedTimelines)
+            }
+            return (true, securedTimelines)
+        }
     }
     
     private func jsonString(addressPattern: String, data: SKData) -> String {
@@ -186,6 +187,26 @@ final public class SKServer: NSObject {
         }
         tidyConnections()
         delegate?.server(self, didUpdateConnectedClients: connections[uuid] ?? [], toTimeline: timeline)
+    }
+    
+    private func note(with message: OSCMessage) {
+        guard let delegate = delegate, let socket = message.replySocket else { return }
+        let client = SKClientFacade(socket: socket)
+        switch timelinesAuthorised(for: message) {
+        case (true, let descriptions):
+            let code = delegate.statusCode(for: client, sendingMessage: message, toServer: self, forTimelines: descriptions)
+            var colour = SKNoteColour.green
+            if message.arguments.count >= 2, let colourArgument = message.arguments[1] as? String, let noteColour = SKNoteColour(rawValue: colourArgument) {
+                colour = noteColour
+            }
+            // We should definetly have a note argument here as it shouldn't have been passed to this method if it didn't!
+            guard let note = message.arguments[0] as? String else { return }
+            let string = jsonString(addressPattern: message.addressPattern, data: .note(SKNoteDescription(note: note, colour: colour, code: code)))
+            let reply = OSCMessage(messageWithAddressPattern: message.replyAddress(), arguments: [string])
+            socket.sendTCP(packet: reply, withStreamFraming: .SLIP)
+        default: break
+        }
+
     }
     
     private func tidyConnections() {
