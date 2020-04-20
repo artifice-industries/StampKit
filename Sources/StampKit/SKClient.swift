@@ -91,8 +91,8 @@ final class SKClient {
     func process(message: OSCMessage) {
         let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
         switch message.type {
-        case .reply:
-            if message.addressPattern != "/reply/timelines" {
+        case .response:
+            if message.addressPattern != "/response/timelines" {
                 os_log("Reply: %{PUBLIC}@", log: .client, type: .info, message.addressPattern)
             }
             do {

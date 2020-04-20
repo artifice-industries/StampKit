@@ -35,7 +35,7 @@ public typealias SKCompletionHandler = (SKData) -> Void
 // MARK:- Address Pattern Parts
 enum SKAddressParts: String {
     case application = ""
-    case reply = "/reply"
+    case response = "/response"
     case update = "/update"
     case timelines = "/timelines"
     case timeline = "/timeline"

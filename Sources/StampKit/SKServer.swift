@@ -140,7 +140,7 @@ final public class SKServer: NSObject {
     private func timelines(with message: OSCMessage) {
         guard let socket = message.replySocket else { return }
         let string = jsonString(addressPattern: message.addressPattern, data: .timelines(timelines))
-        let message = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.reply.rawValue)\(SKAddressParts.timelines.rawValue)", arguments: [string])
+        let message = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.response.rawValue)\(SKAddressParts.timelines.rawValue)", arguments: [string])
         socket.sendTCP(packet: message, withStreamFraming: .SLIP)
     }
     
@@ -151,7 +151,7 @@ final public class SKServer: NSObject {
         if timeline.hasPassword {
             guard message.arguments.count == 1, let password = message.arguments[0] as? String, password == timeline.password else {
                 let string = jsonString(addressPattern: message.addressPattern, data: .connect(SKStatusDescription(status: SKTimelinePassword.unauthorised.rawValue, uuid: timeline.uuid)))
-                let reply = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.reply.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
+                let reply = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.response.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
                 socket.sendTCP(packet: reply, withStreamFraming: .SLIP)
                 return
             }
@@ -173,7 +173,7 @@ final public class SKServer: NSObject {
         
         // 3. Return Authorisation Message
         let string = jsonString(addressPattern: message.addressPattern, data: .connect(SKStatusDescription(status: SKTimelinePassword.authorised.rawValue, uuid: timeline.uuid)))
-        let reply = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.reply.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
+        let reply = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.response.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
         socket.sendTCP(packet: reply, withStreamFraming: .SLIP)
         delegate?.server(self, didUpdateConnectedClients: connections[uuid] ?? [], toTimeline: timeline)
     }

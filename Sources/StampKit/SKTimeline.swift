@@ -177,7 +177,7 @@ public final class SKTimeline: NSObject {
         client.send(message: message)
     }
     
-    public func send(note: String, withColour colour: SKNoteColour, completionHandler: SKNoteHandler? = nil) {
+    public func request(note: String, withColour colour: SKNoteColour, completionHandler: SKNoteHandler? = nil) {
         os_log("Sending Note: %{PUBLIC}@", log: .timeline, type: .info, note)
         client.sendMessage(with: SKAddressParts.note.rawValue, arguments: [note, colour.rawValue], completionHandler: { data in
             guard case .note(let description) = data else { return }

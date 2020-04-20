@@ -12,7 +12,7 @@ import OSCKit
 extension OSCMessage {
     
     public enum SKReceiveMessageType {
-        case reply
+        case response
         case timelines
         case connect
         case disconnect
@@ -23,8 +23,8 @@ extension OSCMessage {
     
     public var type: SKReceiveMessageType {
         get {
-            if self.isReply {
-                return .reply
+            if self.isResponse {
+                return .response
             } else if self.isTimelines {
                 return .timelines
             } else if self.isConnect {
@@ -42,10 +42,10 @@ extension OSCMessage {
     }
     
     // MARK:- Replies
-    // Address Pattern: /stamp/reply/...
-    private var isReply: Bool {
+    // Address Pattern: /stamp/response/...
+    private var isResponse: Bool {
         get {
-            return self.addressPattern.hasPrefix("\(SKAddressParts.application.rawValue)\(SKAddressParts.reply.rawValue)")
+            return self.addressPattern.hasPrefix("\(SKAddressParts.application.rawValue)\(SKAddressParts.response.rawValue)")
         }
     }
     
@@ -99,12 +99,12 @@ extension OSCMessage {
     // MARK:- Helper Methods
     
     public func address() -> String {
-        let startIndex = self.addressPattern.index(self.addressPattern.startIndex, offsetBy: "\(SKAddressParts.application.rawValue)\(SKAddressParts.reply.rawValue)".count)
-        return isReply ? String(self.addressPattern[startIndex...]) : self.addressPattern
+        let startIndex = self.addressPattern.index(self.addressPattern.startIndex, offsetBy: "\(SKAddressParts.application.rawValue)\(SKAddressParts.response.rawValue)".count)
+        return isResponse ? String(self.addressPattern[startIndex...]) : self.addressPattern
     }
     
     public func replyAddress() -> String {
-        return "\(SKAddressParts.application.rawValue)\(SKAddressParts.reply.rawValue)\(addressPattern)"
+        return "\(SKAddressParts.application.rawValue)\(SKAddressParts.response.rawValue)\(addressPattern)"
     }
 
     public func addressWithoutTimeline(timelineID: String? = nil) -> String {
@@ -120,7 +120,7 @@ extension OSCMessage {
     }
     
     public func response() throws -> SKPacket {
-        guard self.isReply else { throw SKResponseError.invalidMessageType }
+        guard self.isResponse else { throw SKResponseError.invalidMessageType }
         guard self.arguments.count == 1, let argument = self.arguments[0] as? String else { throw SKResponseError.invalidArguments }
         guard let body = argument.data(using: .utf8) else { throw SKResponseError.stringDecoding }
         let decoder = JSONDecoder()
