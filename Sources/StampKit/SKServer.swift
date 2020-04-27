@@ -14,7 +14,7 @@ public protocol SKServerDelegate {
     func server(_: SKServer, didUpdateTimelines: [SKTimelineDescription])
     func server(_: SKServer, didUpdateConnectedClients clients: [SKClientFacade], toTimeline timeline: SKTimelineDescription)
     func server(_: SKServer, didReceiveMessage message: OSCMessage, forTimelines timelines: [SKTimelineDescription])
-    func statusCode(for client: SKClientFacade, sendingMessage message: OSCMessage, toServer server: SKServer, forTimelines timelines: [SKTimelineDescription]) -> SKResponseStatusCode
+    func responseStatusCode(for note: String, withColour colour: SKNoteColour, fromClient client: SKClientFacade, toServer server: SKServer, forTimelines: [SKTimelineDescription]) -> SKResponseStatusCode
 }
 
 public enum SKServerStatus: String {
@@ -194,13 +194,14 @@ final public class SKServer: NSObject {
         let client = SKClientFacade(socket: socket)
         switch timelinesAuthorised(for: message) {
         case (true, let descriptions):
-            let code = delegate.statusCode(for: client, sendingMessage: message, toServer: self, forTimelines: descriptions)
-            var colour = SKNoteColour.green
+            
+            var colour = SKNoteColour.undefined
             if message.arguments.count >= 2, let colourArgument = message.arguments[1] as? String, let noteColour = SKNoteColour(rawValue: colourArgument) {
                 colour = noteColour
             }
             // We should definetly have a note argument here as it shouldn't have been passed to this method if it didn't!
             guard let note = message.arguments[0] as? String else { return }
+            let code = delegate.responseStatusCode(for: note, withColour: colour, fromClient: client, toServer: self, forTimelines: descriptions)
             let string = jsonString(addressPattern: message.addressPattern, data: .note(SKNoteDescription(note: note, colour: colour, code: code)))
             let reply = OSCMessage(messageWithAddressPattern: message.replyAddress(), arguments: [string])
             socket.sendTCP(packet: reply, withStreamFraming: .SLIP)

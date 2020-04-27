@@ -58,6 +58,7 @@ public enum SKNoteColour: String, Codable {
     case red
     case yellow
     case purple
+    case undefined
 }
 
 public enum SKResponseStatusCode: Int, Error, Codable {
