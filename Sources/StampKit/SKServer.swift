@@ -14,7 +14,7 @@ public protocol SKServerDelegate {
     func server(_: SKServer, didUpdateTimelines timelines: [SKTimelineDescription])
     func server(_: SKServer, didUpdateConnectedClients clients: [SKClientFacade], toTimeline timeline: SKTimelineDescription)
     func server(_: SKServer, didReceiveMessage message: OSCMessage, forTimelines timelines: [SKTimelineDescription])
-    func responseStatusCode(for note: String, withColour colour: SKNoteColour, fromClient client: SKClientFacade, toServer server: SKServer, forTimelines timelines: [SKTimelineDescription]) -> SKResponseStatusCode
+    func responseStatusCode(for note: String, withColour colour: SKNoteColour, fromClient client: SKClientFacade, toServer server: SKServer, forTimeline timeline: SKTimelineDescription) -> SKResponseStatusCode
 }
 
 public enum SKServerStatus: String {
@@ -201,10 +201,12 @@ final public class SKServer: NSObject {
             }
             // We should definetly have a note argument here as it shouldn't have been passed to this method if it didn't!
             guard let note = message.arguments[0] as? String else { return }
-            let code = delegate.responseStatusCode(for: note, withColour: colour, fromClient: client, toServer: self, forTimelines: descriptions)
-            let string = jsonString(addressPattern: message.addressPattern, data: .note(SKNoteDescription(note: note, colour: colour, code: code)))
-            let response = OSCMessage(messageWithAddressPattern: message.responseAddress(), arguments: [string])
-            socket.sendTCP(packet: response, withStreamFraming: .SLIP)
+            for description in descriptions {
+                let code = delegate.responseStatusCode(for: note, withColour: colour, fromClient: client, toServer: self, forTimeline: description)
+                let string = jsonString(addressPattern: message.addressPattern, data: .note(SKNoteDescription(note: note, colour: colour, code: code)))
+                let response = OSCMessage(messageWithAddressPattern: message.responseAddress(), arguments: [string])
+                socket.sendTCP(packet: response, withStreamFraming: .SLIP)
+            }
         default: break
         }
 
