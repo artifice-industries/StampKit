@@ -103,7 +103,7 @@ extension OSCMessage {
         return isResponse ? String(self.addressPattern[startIndex...]) : self.addressPattern
     }
     
-    public func replyAddress() -> String {
+    public func responseAddress() -> String {
         return "\(SKAddressParts.application.rawValue)\(SKAddressParts.response.rawValue)\(addressPattern)"
     }
 

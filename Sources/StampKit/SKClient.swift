@@ -80,21 +80,22 @@ final class SKClient {
         let fullAddress = timeline && delegate != nil ? "\(timelinePrefix)\(addressPattern)" : addressPattern
         let message = OSCMessage(messageWithAddressPattern: fullAddress, arguments: arguments)
         
-//        let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
-        
         if message.addressPattern != "/timelines" {
-            os_log("Sending: %{PUBLIC}@", log: .client, type: .info, message.addressPattern)
+            let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
+            os_log("Sent: %{PUBLIC}@", log: .client, type: .info, annotation)
         }
         client.send(packet: message)
     }
     
     func process(message: OSCMessage) {
-        let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
+        
+        if message.addressPattern != "/response/timelines" {
+            let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
+            os_log("Received: %{PUBLIC}@", log: .client, type: .info, annotation)
+        }
         switch message.type {
         case .response:
-            if message.addressPattern != "/response/timelines" {
-                os_log("Reply: %{PUBLIC}@", log: .client, type: .info, message.addressPattern)
-            }
+
             do {
                 let data = try message.response().data
                 DispatchQueue.main.async { [weak self] in
@@ -109,7 +110,6 @@ final class SKClient {
                 os_log("Error: %{PUBLIC}@", log: .client, type: .error, error.localizedDescription)
             }
         case .update:
-            os_log("Update: %{PUBLIC}@", log: .client, type: .info, annotation)
             switch message.updateType() {
             case .disconnect:
                 DispatchQueue.main.async { [weak self] in
@@ -119,8 +119,6 @@ final class SKClient {
             case .timeline: break
             case .unknown: break
             }
-        case .unknown:
-            os_log("Unknown Message: %{PUBLIC}@", log: .client, type: .info, annotation)
         default: break
         }
     }
