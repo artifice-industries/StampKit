@@ -53,14 +53,14 @@ public final class SKServerFacade: NSObject {
     
     // MARK:- Timelines
     
-    private func timeline(with uniqueID: String) -> SKTimeline? {
-        return timelines.first(where: { $0.uniqueID == uniqueID })
+    private func timeline(with uuid: UUID) -> SKTimeline? {
+        return timelines.first(where: { $0.uuid == uuid })
     }
     
     internal func update(with descriptions: [SKTimelineDescription]) {
         var newTimelines: Set<SKTimeline> = []
         for description in descriptions {
-            if let existingTimeline = timeline(with: description.uuid.uuidString) {
+            if let existingTimeline = timeline(with: description.uuid) {
                 newTimelines.insert(existingTimeline)
                 _ = existingTimeline.update(with: description)
             } else {

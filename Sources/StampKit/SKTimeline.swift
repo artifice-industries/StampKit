@@ -17,11 +17,11 @@ public protocol SKTimelineDelegate {
 
 public final class SKTimeline: NSObject {
     
-    public override var description: String { get { return "\(super.description) - \(self.name) - \(self.uniqueID)" } }
+    public override var description: String { get { return "\(super.description) - \(self.name) - \(self.uuid.uuidString)" } }
     public var fullName: String { get { return "\(name) (\(server.name))" }}
     public var serverName: String { get { return server.name }}
     public private(set) var password: (required: Bool, text: String?) = (false, nil)
-    public private(set) var uniqueID: String = ""
+    public let uuid: UUID
     public private(set) var name: String = ""
     public private(set) var connected = false
     
@@ -34,7 +34,7 @@ public final class SKTimeline: NSObject {
     private var server: SKServerFacade
     
     internal init(with timeline: SKTimelineDescription, andServer server: SKServerFacade) {
-        self.uniqueID = timeline.uuid.uuidString
+        self.uuid = timeline.uuid
         self.client = SKClient(with: server.host, port: server.port, useTCP: true)
         self.server = server
         super.init()
@@ -200,7 +200,7 @@ extension SKTimeline: SKClientDelegate {
         
     }
     
-    var timelineID: String { return uniqueID }
+    var timelineID: String { return uuid.uuidString }
     var disconnectOnError: Bool { get { return reconnection } }
     
 }
