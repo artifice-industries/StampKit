@@ -19,6 +19,7 @@ public final class SKTimeline: NSObject {
     
     public override var description: String { get { return "\(super.description) - \(self.name) - \(self.uniqueID)" } }
     public var fullName: String { get { return "\(name) (\(server.name))" }}
+    public var serverName: String { get { return server.name }}
     public private(set) var password: (required: Bool, text: String?) = (false, nil)
     public private(set) var uniqueID: String = ""
     public private(set) var name: String = ""
