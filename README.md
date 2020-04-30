@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="stampkit-icon.png" width="1024" alt=“StampKit” />
+    <img src="stampkit-icon.svg" width="256" align="middle" alt=“StampKit”/>
 </p>
 Communicate with Stamp servers from remote devices.
 
