@@ -50,7 +50,7 @@ let browser = SKBrowser()
 browser.delegate = self
 browser.start()
 
-// Optionally refresh the discovered servers.
+// Optionally refresh the discovered servers by a number of seconds.
 browser.refresh(every: 3)
 ```
 
