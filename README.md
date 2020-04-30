@@ -62,7 +62,7 @@ func browser(_: SKBrowser, didUpdateTimelinesForServer server: SKServerFacade) {
 }
 
 func browser(_: SKBrowser, didUpdateServers servers: Set<SKServerFacade>) {
-    print(server)
+    print(servers)
 }
 ```
 
