@@ -1,6 +1,7 @@
 <p align="center">
     <img src="stampkit-icon.svg" width="256" align="middle" alt=“StampKit”/>
 </p>
+# StampKit
 Communicate with Stamp servers from remote devices.
 
 ## Overview
