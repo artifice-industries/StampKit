@@ -22,7 +22,11 @@ public struct SKTimelineDescription {
     public init(name: String, uuid: UUID, andPassword password: String? = nil) {
         self.name = name
         self.uuid = uuid
-        self.password = password
+        if let pass = password, pass.isEmpty {
+            self.password = nil
+        } else {
+           self.password = password
+        }
     }
     
     public func authorised(with password: String?) -> Bool {
