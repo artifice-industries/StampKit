@@ -34,3 +34,9 @@ Import into your project files using Swift:
 ``` swift
 import StampKit
 ```
+
+## Authors
+
+**Sam Smallman** - [SammyTheHand](https://github.com/sammythehand)
+
+See also the list of [contributors](https://github.com/artifice-industries/StampKit/graphs/contributors) who participated in this project.
