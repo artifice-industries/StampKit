@@ -35,6 +35,37 @@ Import into your project files using Swift:
 import StampKit
 ```
 
+### First Steps
+
+Obtain a `SKTimeline` to use in your app.
+
+#### Automatic
+
+Using `SKBrowser` and providing it a delegate that implements the `SKBrowserDelegate` protocol, instances of Stamp servers can be automatically discovered. The browser has a `servers` property that is a set of `SKServerFacade` objects. Each `SKServerFacade` has a `timelines` property that holds a set of `SKTimeline` objects discovered on the network.
+
+Create the `SKBrowser`:
+
+``` swift
+let browser = SKBrowser()
+browser.delegate = self
+browser.start()
+
+// Optionally refresh the discovered servers.
+browser.refresh(every: 3)
+```
+
+Conform to the `SKBrowserDelegate` protocol:
+
+``` swift
+func browser(_: SKBrowser, didUpdateTimelinesForServer server: SKServerFacade) {
+    print(server.timelines)
+}
+
+func browser(_: SKBrowser, didUpdateServers servers: Set<SKServerFacade>) {
+    print(server)
+}
+```
+
 ## Authors
 
 **Sam Smallman** - [SammyTheHand](https://github.com/sammythehand)
