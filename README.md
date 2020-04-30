@@ -3,7 +3,7 @@
 </p>
 
 # StampKit
-Communicate with [Stamp](https://stamp.xyz) servers from remote devices.
+Communicate with [Stamp](https://stamp.xyz) from remote devices.
 
 ## Overview
 The StampKit package provides the classes needed for your apps to communicate with Stamp.
