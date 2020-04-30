@@ -75,3 +75,4 @@ See also the list of [contributors](https://github.com/artifice-industries/Stamp
 ## Acknowledgments
 
 * Socket library dependency [CocoaSyncSocket](https://github.com/robbiehanson/CocoaAsyncSocket)
+* OSC library dependency [OSCKit](https://github.com/SammyTheHand/OSCKit)
