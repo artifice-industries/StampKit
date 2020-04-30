@@ -21,7 +21,7 @@ https://github.com/artifice-industries/StampKit
 
 Add the package dependency to your Package.swift and depend on "StampKit" in the necessary targets:
 
-``` 
+```  swift
 dependencies: [
     .package(url: "https://github.com/artifice-industries/StampKit", .branch("master"))
 ]
