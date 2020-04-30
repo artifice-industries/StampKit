@@ -11,5 +11,5 @@ The StampKit package provides the classes needed for your apps to communicate wi
 **NOTE:** This package and the OSC API is under active development and may change at any time...
 
 ## Installation
-Add the following packages to your project by using Xcodes Swift Package Manager: 
+Add the following package to your project by using Xcodes Swift Package Manager: 
 - StampKit: https://github.com/artifice-industries/StampKit
