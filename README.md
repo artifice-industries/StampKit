@@ -3,7 +3,7 @@
 </p>
 
 # StampKit
-Communicate with Stamp servers from remote devices.
+Communicate with [Stamp](https://stamp.xyz) servers from remote devices.
 
 ## Overview
 The StampKit package provides the classes needed for your apps to communicate with Stamp.
@@ -40,3 +40,7 @@ import StampKit
 **Sam Smallman** - [SammyTheHand](https://github.com/sammythehand)
 
 See also the list of [contributors](https://github.com/artifice-industries/StampKit/graphs/contributors) who participated in this project.
+
+## Acknowledgments
+
+* Socket library dependency [CocoaSyncSocket](https://github.com/robbiehanson/CocoaAsyncSocket)
