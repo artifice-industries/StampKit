@@ -68,7 +68,8 @@ final class SKClient {
         if let handler = completionHandler {
             self.completionHandlers[message.addressPattern] = handler
         }
-        client.send(packet: message.applicationMessage())
+        message.readdress(to: message.addressPattern(withApplication: true))
+        client.send(packet: message)
     }
     
     // Optional parameters within a closure are escaping by default.
@@ -78,7 +79,8 @@ final class SKClient {
             self.completionHandlers[addressPattern] = handler
         }
         let fullAddress = timeline && delegate != nil ? "\(timelinePrefix)\(addressPattern)" : addressPattern
-        let message = OSCMessage(messageWithAddressPattern: fullAddress, arguments: arguments).applicationMessage()
+        let message = OSCMessage(with: fullAddress, arguments: arguments)
+        message.readdress(to: message.addressPattern(withApplication: true))
         
         if message.addressPattern != "/stamp/timelines" {
             let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
@@ -143,11 +145,16 @@ extension SKClient: OSCPacketDestination {
     }
     
     func take(message: OSCMessage) {
-        if message.addressPattern != "/stamp/response/timelines" {
-            let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
-            os_log("Received: %{PUBLIC}@", log: .client, type: .info, annotation)
+        if message.isForStamp {
+            if message.addressPattern != "/stamp/response/timelines" {
+                let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
+                os_log("Received: %{PUBLIC}@", log: .client, type: .info, annotation)
+            }
+            message.readdress(to: message.addressPattern(withApplication: false))
+            process(message: message)
+        } else {
+            os_log("Message Not For Stamp", log: .client, type: .info)
         }
-        process(message: message.message())
     }
     
 }

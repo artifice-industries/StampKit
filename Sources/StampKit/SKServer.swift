@@ -139,9 +139,10 @@ final public class SKServer: NSObject {
     
     private func timelines(with message: OSCMessage) {
         guard let socket = message.replySocket else { return }
-        let string = jsonString(addressPattern: message.applicationAddressPattern(), data: .timelines(timelines))
-        let message = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.application.rawValue)\(SKAddressParts.response.rawValue)\(SKAddressParts.timelines.rawValue)", arguments: [string])
-        socket.sendTCP(packet: message, withStreamFraming: .SLIP)
+        let string = jsonString(addressPattern: message.addressPattern(withApplication: true), data: .timelines(timelines))
+        let response = OSCMessage(with: message.responseAddress(), arguments: [string])
+        response.readdress(to: response.addressPattern(withApplication: true))
+        socket.sendTCP(packet: response, withStreamFraming: .SLIP)
     }
     
     private func connect(with message: OSCMessage) {
@@ -150,8 +151,9 @@ final public class SKServer: NSObject {
         // 1. Authorise
         if timeline.hasPassword {
             guard message.arguments.count == 1, let password = message.arguments[0] as? String, password == timeline.password else {
-                let string = jsonString(addressPattern: message.applicationAddressPattern(), data: .connect(SKStatusDescription(status: SKTimelinePassword.unauthorised.rawValue, uuid: timeline.uuid)))
-                let response = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.application.rawValue)\(SKAddressParts.response.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
+                let string = jsonString(addressPattern: message.addressPattern(withApplication: true), data: .connect(SKStatusDescription(status: SKTimelinePassword.unauthorised.rawValue, uuid: timeline.uuid)))
+                let response = OSCMessage(with: message.responseAddress(), arguments: [string])
+                response.readdress(to: response.addressPattern(withApplication: true))
                 socket.sendTCP(packet: response, withStreamFraming: .SLIP)
                 return
             }
@@ -172,8 +174,9 @@ final public class SKServer: NSObject {
         tidyConnections()
         
         // 3. Return Authorisation Message
-        let string = jsonString(addressPattern: message.applicationAddressPattern(), data: .connect(SKStatusDescription(status: SKTimelinePassword.authorised.rawValue, uuid: timeline.uuid)))
-        let response = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.application.rawValue)\(SKAddressParts.response.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
+        let string = jsonString(addressPattern: message.addressPattern(withApplication: true), data: .connect(SKStatusDescription(status: SKTimelinePassword.authorised.rawValue, uuid: timeline.uuid)))
+        let response = OSCMessage(with: message.responseAddress(), arguments: [string])
+        response.readdress(to: response.addressPattern(withApplication: true))
         socket.sendTCP(packet: response, withStreamFraming: .SLIP)
         delegate?.server(self, didUpdateConnectedClients: connections[uuid] ?? [], toTimeline: timeline)
     }
@@ -203,13 +206,13 @@ final public class SKServer: NSObject {
             guard let note = message.arguments[0] as? String else { return }
             for description in descriptions {
                 let code = delegate.responseStatusCode(for: note, withColour: colour, fromClient: client, toServer: self, forTimeline: description)
-                let string = jsonString(addressPattern: message.applicationAddressPattern(), data: .note(SKNoteDescription(note: note, colour: colour, code: code)))
-                let response = OSCMessage(messageWithAddressPattern: message.responseAddress(), arguments: [string])
-                socket.sendTCP(packet: response.applicationMessage(), withStreamFraming: .SLIP)
+                let string = jsonString(addressPattern: message.addressPattern(withApplication: true), data: .note(SKNoteDescription(note: note, colour: colour, code: code)))
+                let response = OSCMessage(with: message.responseAddress(), arguments: [string])
+                response.readdress(to: response.addressPattern(withApplication: true))
+                socket.sendTCP(packet: response, withStreamFraming: .SLIP)
             }
         default: break
         }
-
     }
     
     private func tidyConnections() {
@@ -227,7 +230,12 @@ extension SKServer: OSCPacketDestination {
     }
     
     public func take(message: OSCMessage) {
-        process(message: message.message())
+        if message.isForStamp {
+            message.readdress(to: message.addressPattern(withApplication: false))
+            process(message: message)
+        } else {
+            os_log("Message Not For Stamp", log: .server, type: .info)
+        }
     }
     
 }

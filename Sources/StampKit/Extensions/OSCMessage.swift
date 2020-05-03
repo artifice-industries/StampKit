@@ -11,7 +11,7 @@ import OSCKit
 
 extension OSCMessage {
     
-    public enum SKReceiveMessageType {
+    internal enum SKReceiveMessageType {
         case timelines
         case connect
         case disconnect
@@ -21,7 +21,7 @@ extension OSCMessage {
         case unknown
     }
     
-    public var type: SKReceiveMessageType {
+    internal var type: SKReceiveMessageType {
         get {
             if self.isTimelines {
                 return .timelines
@@ -41,6 +41,8 @@ extension OSCMessage {
         }
     }
     
+    internal var isForStamp: Bool { get { self.addressPattern.hasPrefix(SKAddressParts.application.rawValue) } }
+    
     // MARK:- Replies
     // Address Pattern: /response...
     private var isResponse: Bool {
@@ -50,7 +52,7 @@ extension OSCMessage {
     }
     
     // MARK:- Updates
-    public enum SKReceiveMessageUpdateType {
+    internal enum SKReceiveMessageUpdateType {
         case timeline
         case disconnect
         case unknown
@@ -63,7 +65,7 @@ extension OSCMessage {
         }
     }
     
-    public func updateType() -> SKReceiveMessageUpdateType {
+    internal func updateType() -> SKReceiveMessageUpdateType {
         guard isUpdate else { return .unknown }
         if addressParts.count == 3 && addressParts[1] == SKAddressParts.timeline.rawValue.dropFirst() {
             return .timeline
@@ -98,44 +100,26 @@ extension OSCMessage {
     
     // MARK:- Helper Methods
     
-    // Adds the /stamp/ prefix to an address pattern.
-    // Address Pattern: /stamp/...
-    func applicationMessage() -> OSCMessage {
-        if !self.addressPattern.hasPrefix(SKAddressParts.application.rawValue) {
-            let applicationMessage = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.application.rawValue)\(self.addressPattern)", arguments: self.arguments)
-            applicationMessage.replySocket = self.replySocket
-            return applicationMessage
-        }
-        return self
-    }
-    
-    func applicationAddressPattern() -> String {
-        return !self.addressPattern.hasPrefix(SKAddressParts.application.rawValue) ? "\(SKAddressParts.application.rawValue)\(self.addressPattern)" : self.addressPattern
-    }
-    
-    // Removes the /stamp/ prefix to an address pattern.
-    // Address Pattern: /...
-    func message() -> OSCMessage {
-        if self.addressPattern.hasPrefix(SKAddressParts.application.rawValue) {
+    internal func addressPattern(withApplication application: Bool) -> String {
+        if application {
+            return !self.addressPattern.hasPrefix(SKAddressParts.application.rawValue) ? "\(SKAddressParts.application.rawValue)\(self.addressPattern)" : self.addressPattern
+        } else {
             let startIndex = SKAddressParts.application.rawValue.index(SKAddressParts.application.rawValue.startIndex, offsetBy: SKAddressParts.application.rawValue.count)
-            let message = OSCMessage(messageWithAddressPattern: String(self.addressPattern[startIndex...]), arguments: self.arguments)
-            message.replySocket = self.replySocket
-            return message
+            return String(self.addressPattern[startIndex...])
         }
-        return self
     }
     
-    public func address() -> String {
+    internal func responseAddress() -> String {
+        return "\(SKAddressParts.response.rawValue)\(addressPattern)"
+    }
+    
+    private func addressWithoutResponse() -> String {
         let startIndex = self.addressPattern.index(self.addressPattern.startIndex, offsetBy: SKAddressParts.response.rawValue.count)
         return isResponse ? String(self.addressPattern[startIndex...]) : self.addressPattern
     }
-    
-    public func responseAddress() -> String {
-        return "\(SKAddressParts.response.rawValue)\(addressPattern)"
-    }
 
-    public func addressWithoutTimeline(timelineID: String? = nil) -> String {
-        let oldAddress = address()
+    internal func addressWithoutTimeline(timelineID: String? = nil) -> String {
+        let oldAddress = addressWithoutResponse()
         guard let uniqueID = timelineID else { return oldAddress }
         let timelinePrefix = "\(SKAddressParts.timeline.rawValue)/\(uniqueID)"
         if oldAddress.hasPrefix(timelinePrefix) {
@@ -146,7 +130,7 @@ extension OSCMessage {
         }
     }
     
-    public func response() throws -> SKPacket {
+    internal func response() throws -> SKPacket {
         guard self.isResponse else { throw SKResponseError.invalidMessageType }
         guard self.arguments.count == 1, let argument = self.arguments[0] as? String else { throw SKResponseError.invalidArguments }
         guard let body = argument.data(using: .utf8) else { throw SKResponseError.stringDecoding }
@@ -155,7 +139,7 @@ extension OSCMessage {
         return packet
     }
     
-    func uuid() -> String? {
+    internal func uuid() -> String? {
         guard addressParts[0] == SKAddressParts.timeline.rawValue.dropFirst() else { return nil }
         return addressParts[1]
     }
