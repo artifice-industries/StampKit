@@ -36,7 +36,7 @@ extension SKPacket: Codable {
         self.addressPattern = try container.decode(String.self, forKey: .addressPattern)
         
         switch addressPattern {
-        case SKAddressParts.timelines.rawValue:
+        case "\(SKAddressParts.application.rawValue)\(SKAddressParts.timelines.rawValue)":
             let payload = try container.decode([SKTimelineDescription].self, forKey: .data)
             self.data = .timelines(payload)
         case _ where addressPattern.hasSuffix(SKAddressParts.connect.rawValue):

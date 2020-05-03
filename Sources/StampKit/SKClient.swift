@@ -68,7 +68,7 @@ final class SKClient {
         if let handler = completionHandler {
             self.completionHandlers[message.addressPattern] = handler
         }
-        client.send(packet: message)
+        client.send(packet: message.applicationMessage())
     }
     
     // Optional parameters within a closure are escaping by default.
@@ -78,9 +78,9 @@ final class SKClient {
             self.completionHandlers[addressPattern] = handler
         }
         let fullAddress = timeline && delegate != nil ? "\(timelinePrefix)\(addressPattern)" : addressPattern
-        let message = OSCMessage(messageWithAddressPattern: fullAddress, arguments: arguments)
+        let message = OSCMessage(messageWithAddressPattern: fullAddress, arguments: arguments).applicationMessage()
         
-        if message.addressPattern != "/timelines" {
+        if message.addressPattern != "/stamp/timelines" {
             let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
             os_log("Sent: %{PUBLIC}@", log: .client, type: .info, annotation)
         }
@@ -88,14 +88,8 @@ final class SKClient {
     }
     
     func process(message: OSCMessage) {
-        
-        if message.addressPattern != "/response/timelines" {
-            let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
-            os_log("Received: %{PUBLIC}@", log: .client, type: .info, annotation)
-        }
         switch message.type {
         case .response:
-
             do {
                 let data = try message.response().data
                 DispatchQueue.main.async { [weak self] in
@@ -149,7 +143,11 @@ extension SKClient: OSCPacketDestination {
     }
     
     func take(message: OSCMessage) {
-        process(message: message)
+        if message.addressPattern != "/stamp/response/timelines" {
+            let annotation = OSCAnnotation.annotation(for: message, with: .spaces, andType: true)
+            os_log("Received: %{PUBLIC}@", log: .client, type: .info, annotation)
+        }
+        process(message: message.message())
     }
     
 }

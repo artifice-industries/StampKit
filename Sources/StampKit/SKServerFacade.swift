@@ -27,7 +27,7 @@ public final class SKServerFacade: NSObject {
     let host: String
     let port: Int
 
-    // Create a private client that we'll use for querying the list of timelines on the Stamp ServerFacade.
+    // Create a private client that we'll use for querying the list of timelines on the Stamp Server.
     convenience init(host: String, port: Int) {
         let client = SKClient(with: host, port: port, useTCP: true)
         self.init(host: host, port: port, client: client)
@@ -79,7 +79,7 @@ public final class SKServerFacade: NSObject {
             return
         }
     
-        client.sendMessage(with: "\(SKAddressParts.timelines.rawValue)", arguments: [], timeline: false, completionHandler: { [weak self] data in
+        client.sendMessage(with: SKAddressParts.timelines.rawValue, arguments: [], timeline: false, completionHandler: { [weak self] data in
             guard let strongSelf = self else { return }
             guard case .timelines(let descriptions) = data else { return }
             

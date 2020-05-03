@@ -8,6 +8,8 @@
 
 import Foundation
 
+let StampKitVersion = "1.0.0"
+
 // MARK: Bonjour (mDNS) Constants
 let StampKitBonjourTCPServiceType: String = "_stamp._tcp."
 let StampKitBonjourServiceDomain: String = "local."
@@ -34,7 +36,7 @@ public typealias SKCompletionHandler = (SKData) -> Void
 
 // MARK:- Address Pattern Parts
 enum SKAddressParts: String {
-    case application = ""
+    case application = "/stamp"
     case response = "/response"
     case update = "/update"
     case timelines = "/timelines"

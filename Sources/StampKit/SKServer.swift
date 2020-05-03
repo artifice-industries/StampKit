@@ -27,7 +27,7 @@ final public class SKServer: NSObject {
     private let publisher: SKPublisher
     private let server: OSCServer
     public private(set) var status: SKServerStatus = .online
-    public private(set) var connections: [String : [SKClientFacade]]
+    public private(set) var connections: [UUID : [SKClientFacade]]
     
     public var delegate: SKServerDelegate?
     
@@ -84,8 +84,8 @@ final public class SKServer: NSObject {
         }
     }
     
-    public func timeline(withUUID uuid: String) -> SKTimelineDescription? {
-        return timelines.first(where: { $0.uuid.uuidString == uuid })
+    public func timeline(with uuid: UUID) -> SKTimelineDescription? {
+        return timelines.first(where: { $0.uuid == uuid })
     }
     
     func process(message: OSCMessage) {
@@ -106,9 +106,9 @@ final public class SKServer: NSObject {
     
     private func timelinesAuthorised(for message: OSCMessage) -> (authorisation: Bool, timelines: [SKTimelineDescription]) {
         // The message is referencing a timeline
-        if let uuid = message.uuid(), let clients = connections[uuid], let socket = message.replySocket {
+        if let uuidString = message.uuid(), let uuid = UUID(uuidString: uuidString), let clients = connections[uuid], let socket = message.replySocket {
             // 1. Validate authorisation
-            guard clients.contains(where: { $0.hasSocket(socket: socket) }), let timelineDescription = timelines.first(where: { $0.uuid.uuidString == uuid }) else { return (false, []) }
+            guard clients.contains(where: { $0.hasSocket(socket: socket) }), let timelineDescription = timelines.first(where: { $0.uuid == uuid }) else { return (false, []) }
                 return (true, [timelineDescription])
         } else {
             // First get all the unsecured timelines.
@@ -117,7 +117,7 @@ final public class SKServer: NSObject {
                 let client = SKClientFacade(socket: socket)
                 // Add the authorised connections for this client to the timelines array.
                 let connnectedConnections = connections.filter( { $0.value.contains(where: { $0 == client} )})
-                var connectedTimelines = self.timelines.filter( { timeline in connnectedConnections.keys.contains(where: { timeline.uuid.uuidString == $0 } )})
+                var connectedTimelines = self.timelines.filter( { timeline in connnectedConnections.keys.contains(where: { timeline.uuid == $0 } )})
                 // Remove repeated timelines.
                 connectedTimelines = connectedTimelines.filter( { !securedTimelines.contains($0)})
                 securedTimelines.append(contentsOf: connectedTimelines)
@@ -128,7 +128,7 @@ final public class SKServer: NSObject {
     
     private func jsonString(addressPattern: String, data: SKData) -> String {
         do {
-            let packet = SKPacket(status: status.rawValue, addressPattern: addressPattern, version: "1.0.0", data: data)
+            let packet = SKPacket(status: status.rawValue, addressPattern: addressPattern, version: StampKitVersion, data: data)
             let encoder = JSONEncoder()
             let data = try encoder.encode(packet)
             return String(data: data, encoding: .utf8) ?? ""
@@ -139,19 +139,19 @@ final public class SKServer: NSObject {
     
     private func timelines(with message: OSCMessage) {
         guard let socket = message.replySocket else { return }
-        let string = jsonString(addressPattern: message.addressPattern, data: .timelines(timelines))
-        let message = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.response.rawValue)\(SKAddressParts.timelines.rawValue)", arguments: [string])
+        let string = jsonString(addressPattern: message.applicationAddressPattern(), data: .timelines(timelines))
+        let message = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.application.rawValue)\(SKAddressParts.response.rawValue)\(SKAddressParts.timelines.rawValue)", arguments: [string])
         socket.sendTCP(packet: message, withStreamFraming: .SLIP)
     }
     
     private func connect(with message: OSCMessage) {
-        guard let socket = message.replySocket, let uuid = message.uuid(), let timeline = timeline(withUUID: uuid) else { return }
+        guard let socket = message.replySocket, let uuidString = message.uuid(), let uuid = UUID(uuidString: uuidString), let timeline = timeline(with: uuid) else { return }
         
         // 1. Authorise
         if timeline.hasPassword {
             guard message.arguments.count == 1, let password = message.arguments[0] as? String, password == timeline.password else {
-                let string = jsonString(addressPattern: message.addressPattern, data: .connect(SKStatusDescription(status: SKTimelinePassword.unauthorised.rawValue, uuid: timeline.uuid)))
-                let response = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.response.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
+                let string = jsonString(addressPattern: message.applicationAddressPattern(), data: .connect(SKStatusDescription(status: SKTimelinePassword.unauthorised.rawValue, uuid: timeline.uuid)))
+                let response = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.application.rawValue)\(SKAddressParts.response.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
                 socket.sendTCP(packet: response, withStreamFraming: .SLIP)
                 return
             }
@@ -172,14 +172,14 @@ final public class SKServer: NSObject {
         tidyConnections()
         
         // 3. Return Authorisation Message
-        let string = jsonString(addressPattern: message.addressPattern, data: .connect(SKStatusDescription(status: SKTimelinePassword.authorised.rawValue, uuid: timeline.uuid)))
-        let response = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.response.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
+        let string = jsonString(addressPattern: message.applicationAddressPattern(), data: .connect(SKStatusDescription(status: SKTimelinePassword.authorised.rawValue, uuid: timeline.uuid)))
+        let response = OSCMessage(messageWithAddressPattern: "\(SKAddressParts.application.rawValue)\(SKAddressParts.response.rawValue)\(SKAddressParts.timeline.rawValue)/\(uuid)\(SKAddressParts.connect.rawValue)", arguments: [string])
         socket.sendTCP(packet: response, withStreamFraming: .SLIP)
         delegate?.server(self, didUpdateConnectedClients: connections[uuid] ?? [], toTimeline: timeline)
     }
     
     private func disconnect(with message: OSCMessage) {
-        guard let socket = message.replySocket, let uuid = message.uuid(), let timeline = timeline(withUUID: uuid) else { return }
+        guard let socket = message.replySocket, let uuidString = message.uuid(), let uuid = UUID(uuidString: uuidString), let timeline = timeline(with: uuid) else { return }
         let client = SKClientFacade(socket: socket)
         if var clients = connections[uuid] {
             clients.removeAll(where: { $0 == client })
@@ -203,9 +203,9 @@ final public class SKServer: NSObject {
             guard let note = message.arguments[0] as? String else { return }
             for description in descriptions {
                 let code = delegate.responseStatusCode(for: note, withColour: colour, fromClient: client, toServer: self, forTimeline: description)
-                let string = jsonString(addressPattern: message.addressPattern, data: .note(SKNoteDescription(note: note, colour: colour, code: code)))
+                let string = jsonString(addressPattern: message.applicationAddressPattern(), data: .note(SKNoteDescription(note: note, colour: colour, code: code)))
                 let response = OSCMessage(messageWithAddressPattern: message.responseAddress(), arguments: [string])
-                socket.sendTCP(packet: response, withStreamFraming: .SLIP)
+                socket.sendTCP(packet: response.applicationMessage(), withStreamFraming: .SLIP)
             }
         default: break
         }
@@ -227,7 +227,7 @@ extension SKServer: OSCPacketDestination {
     }
     
     public func take(message: OSCMessage) {
-        process(message: message)
+        process(message: message.message())
     }
     
 }
