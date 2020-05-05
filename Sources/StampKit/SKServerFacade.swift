@@ -22,7 +22,7 @@ public final class SKServerFacade: NSObject {
     var refreshTimer: Timer?
     var service: NetService?
     public var name: String
-    public let uuid: UUID()
+    public let uuid = UUID()
     let client: SKClient
     let host: String
     let port: Int
