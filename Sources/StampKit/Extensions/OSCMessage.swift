@@ -29,12 +29,12 @@ extension OSCMessage {
                 return .connect
             } else if self.isDisconnect {
                 return .disconnect
-            } else if self.isNote {
-                return .note
             } else if self.isResponse {
                 return .response
             } else if self.isUpdate {
                 return .update
+            } else if self.isNote {
+                return .note
             } else {
                 return .unknown
             }
