@@ -14,7 +14,6 @@ public protocol SKServerDelegate {
     func server(_ server: SKServer, didUpdateTimelines timelines: [SKTimelineDescription])
     func server(_ server: SKServer, didUpdateConnectedClients clients: [SKClientFacade], toTimeline timeline: SKTimelineDescription)
     func server(_ server: SKServer, didReceiveMessage message: OSCMessage, forTimelines timelines: [SKTimelineDescription])
-    //    func responseStatusCode(for note: String, withColour colour: SKNoteColour, fromClient client: SKClientFacade, toServer server: SKServer, forTimeline timeline: SKTimelineDescription) -> SKResponseStatusCode
 }
 
 public enum SKServerStatus: String {
@@ -22,7 +21,6 @@ public enum SKServerStatus: String {
 }
 
 final public class SKServer: NSObject {
-    
     
     public private(set) var timelines: [SKTimelineDescription] = [] { didSet { delegate?.server(self, didUpdateTimelines:timelines) } }
     private let publisher: SKPublisher
