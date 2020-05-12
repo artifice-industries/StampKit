@@ -8,14 +8,14 @@
 
 import Foundation
 
-public enum SKData {
+internal enum SKData {
     case timelines([SKTimelineDescription])
     case connect(SKStatusDescription)
     case note(SKNoteDescription)
     case empty
 }
 
-public struct SKPacket {
+internal struct SKPacket {
     let status: String
     let addressPattern: String
     let version: String

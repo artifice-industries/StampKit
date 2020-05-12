@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import OSCKit
 
 let StampKitVersion = "1.0.0"
 
@@ -29,10 +30,12 @@ enum SKConnectionStatus: String {
     case unauthorised
 }
 
-// Blocks
-public typealias SKTimelineHandler = (SKTimeline) -> Void
+/// SKTimelineHandler
+///
+/// - Parameter timeline: A `SKTimeline`
+public typealias SKTimelineHandler = (_ timeline: SKTimeline) -> Void
 public typealias SKNoteHandler = (SKNoteDescription) -> Void
-public typealias SKCompletionHandler = (SKData) -> Void
+internal typealias SKCompletionHandler = (SKData) -> Void
 
 // MARK:- Address Pattern Parts
 enum SKAddressParts: String {
@@ -101,6 +104,7 @@ public enum SKResponseStatusCode: Int, Error, Codable {
         default: return .undefined
         }
     }
+    
 }
 
 

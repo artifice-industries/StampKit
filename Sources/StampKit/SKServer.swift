@@ -11,10 +11,10 @@ import OSCKit
 import os.log
 
 public protocol SKServerDelegate {
-    func server(_: SKServer, didUpdateTimelines timelines: [SKTimelineDescription])
-    func server(_: SKServer, didUpdateConnectedClients clients: [SKClientFacade], toTimeline timeline: SKTimelineDescription)
-    func server(_: SKServer, didReceiveMessage message: OSCMessage, forTimelines timelines: [SKTimelineDescription])
-    func responseStatusCode(for note: String, withColour colour: SKNoteColour, fromClient client: SKClientFacade, toServer server: SKServer, forTimeline timeline: SKTimelineDescription) -> SKResponseStatusCode
+    func server(_ server: SKServer, didUpdateTimelines timelines: [SKTimelineDescription])
+    func server(_ server: SKServer, didUpdateConnectedClients clients: [SKClientFacade], toTimeline timeline: SKTimelineDescription)
+    func server(_ server: SKServer, didReceiveMessage message: OSCMessage, forTimelines timelines: [SKTimelineDescription])
+    //    func responseStatusCode(for note: String, withColour colour: SKNoteColour, fromClient client: SKClientFacade, toServer server: SKServer, forTimeline timeline: SKTimelineDescription) -> SKResponseStatusCode
 }
 
 public enum SKServerStatus: String {
@@ -23,12 +23,12 @@ public enum SKServerStatus: String {
 
 final public class SKServer: NSObject {
     
+    
     public private(set) var timelines: [SKTimelineDescription] = [] { didSet { delegate?.server(self, didUpdateTimelines:timelines) } }
     private let publisher: SKPublisher
     private let server: OSCServer
     public private(set) var status: SKServerStatus = .online
     public private(set) var connections: [UUID : [SKClientFacade]]
-    
     public var delegate: SKServerDelegate?
     
     public override init() {
@@ -93,14 +93,9 @@ final public class SKServer: NSObject {
         case .timelines:    timelines(with: message)
         case .connect:      connect(with: message)
         case .disconnect:   disconnect(with: message)
-        case .note:         note(with: message)
-        case .unknown:
-            switch timelinesAuthorised(for: message) {
-            case (true, let descriptions) where !descriptions.isEmpty :
-                delegate?.server(self, didReceiveMessage: message, forTimelines: descriptions)
-            default: break
-            }
-        default: break
+        default:
+            guard case let (true, descriptions) = timelinesAuthorised(for: message), !descriptions.isEmpty else { break }
+            delegate?.server(self, didReceiveMessage: message, forTimelines: descriptions)
         }
     }
     
@@ -109,7 +104,7 @@ final public class SKServer: NSObject {
         if let uuidString = message.uuid(), let uuid = UUID(uuidString: uuidString), let clients = connections[uuid], let socket = message.replySocket {
             // 1. Validate authorisation
             guard clients.contains(where: { $0.hasSocket(socket: socket) }), let timelineDescription = timelines.first(where: { $0.uuid == uuid }) else { return (false, []) }
-                return (true, [timelineDescription])
+            return (true, [timelineDescription])
         } else {
             // First get all the unsecured timelines.
             var securedTimelines = self.timelines.filter( { $0.hasPassword == false })
@@ -190,29 +185,6 @@ final public class SKServer: NSObject {
         }
         tidyConnections()
         delegate?.server(self, didUpdateConnectedClients: connections[uuid] ?? [], toTimeline: timeline)
-    }
-    
-    private func note(with message: OSCMessage) {
-        guard let delegate = delegate, let socket = message.replySocket else { return }
-        let client = SKClientFacade(socket: socket)
-        switch timelinesAuthorised(for: message) {
-        case (true, let descriptions):
-            
-            var colour = SKNoteColour.undefined
-            if message.arguments.count >= 2, let colourArgument = message.arguments[1] as? String, let noteColour = SKNoteColour(rawValue: colourArgument) {
-                colour = noteColour
-            }
-            // We should definetly have a note argument here as it shouldn't have been passed to this method if it didn't!
-            guard let note = message.arguments[0] as? String else { return }
-            for description in descriptions {
-                let code = delegate.responseStatusCode(for: note, withColour: colour, fromClient: client, toServer: self, forTimeline: description)
-                let string = jsonString(addressPattern: message.addressPattern(withApplication: true), data: .note(SKNoteDescription(note: note, colour: colour, code: code)))
-                let response = OSCMessage(messageWithAddressPattern: message.responseAddress(), arguments: [string])
-                response.readdress(to: response.addressPattern(withApplication: true))
-                socket.sendTCP(packet: response, withStreamFraming: .SLIP)
-            }
-        default: break
-        }
     }
     
     private func tidyConnections() {

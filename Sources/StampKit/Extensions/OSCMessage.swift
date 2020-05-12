@@ -140,7 +140,7 @@ extension OSCMessage {
     }
     
     internal func uuid() -> String? {
-        guard addressParts[0] == SKAddressParts.timeline.rawValue.dropFirst() else { return nil }
+        guard addressParts[0] == SKAddressParts.timeline.rawValue.dropFirst(), addressParts.indices.contains(1) else { return nil }
         return addressParts[1]
     }
 
