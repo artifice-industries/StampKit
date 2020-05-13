@@ -20,6 +20,18 @@ internal struct SKPacket {
     let addressPattern: String
     let version: String
     let data: SKData
+    
+    internal static func jsonString(for addressPattern: String, data: SKData) -> String {
+        do {
+            let packet = SKPacket(status: SKServerStatus.online.rawValue, addressPattern: addressPattern, version: StampKitVersion, data: data)
+            let encoder = JSONEncoder()
+            let data = try encoder.encode(packet)
+            return String(data: data, encoding: .utf8) ?? ""
+        } catch {
+            return ""
+        }
+    }
+    
 }
 
 extension SKPacket: Codable {

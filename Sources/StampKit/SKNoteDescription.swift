@@ -15,11 +15,11 @@ import Foundation
 public struct SKNoteDescription {
     
     public let code: SKResponseStatusCode
-    public let note: String
+    public let text: String
     public let colour: SKNoteColour
     
-    public init(note: String, colour: SKNoteColour, code: SKResponseStatusCode) {
-        self.note = note
+    public init(text: String, colour: SKNoteColour, code: SKResponseStatusCode) {
+        self.text = text
         self.colour = colour
         self.code = code
     }
@@ -29,7 +29,7 @@ public struct SKNoteDescription {
 extension SKNoteDescription: Codable {
     
     public enum CodingKeys: String, CodingKey {
-        case note, colour, code = "response_status_code"
+        case text, colour, code = "response_status_code"
     }
     
 }
