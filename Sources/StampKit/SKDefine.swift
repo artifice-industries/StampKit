@@ -47,6 +47,7 @@ enum SKAddressParts: String {
     case connect = "/connect"
     case disconnect = "/disconnect"
     case note = "/note"
+    case notes = "/notes"
     case updates = "/updates"
     case heartbeat = "/thump"
 }

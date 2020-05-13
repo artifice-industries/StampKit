@@ -15,6 +15,7 @@ extension OSCMessage {
         case timelines
         case connect
         case disconnect
+        case notes
         case note
         case response
         case update
@@ -33,6 +34,8 @@ extension OSCMessage {
                 return .response
             } else if self.isUpdate {
                 return .update
+            } else if self.isNotes {
+                return .notes
             } else if self.isNote {
                 return .note
             } else {
@@ -90,6 +93,12 @@ extension OSCMessage {
     // Address Pattern: /timeline/{Unique ID}/disconnect
     private var isDisconnect: Bool {
         return addressParts.count == 3 && addressParts[2] == SKAddressParts.disconnect.rawValue.dropFirst()
+    }
+    
+    // Address Pattern: /timeline/{Unique ID}/note or /stamp/note and needs atleast one string argument.
+    private var isNotes: Bool {
+        guard arguments.count >= 1, arguments[0] is String else { return false }
+        return addressPattern.hasSuffix(SKAddressParts.notes.rawValue)
     }
     
     // Address Pattern: /timeline/{Unique ID}/note or /stamp/note and needs atleast one string argument.
