@@ -178,6 +178,15 @@ public final class SKTimeline: NSObject {
         client.send(message: message)
     }
     
+    public func requestNotes(with completionHandler: SKNotesHandler? = nil) {
+        client.sendMessage(with: SKAddressParts.notes.rawValue, arguments: [], completionHandler: { data in
+            guard case let .notes(noteDescriptions) = data else { return }
+            guard let completion = completionHandler else { return }
+            os_log("Receiving Notes Reply: %{PUBLIC}@", log: .timeline, type: .info, "\(noteDescriptions.count)")
+            completion(noteDescriptions)
+        })
+    }
+    
     public func request(note: String, withColour colour: SKNoteColour, completionHandler: SKNoteHandler? = nil) {
         os_log("Sending Note: %{PUBLIC}@", log: .timeline, type: .info, note)
         client.sendMessage(with: SKAddressParts.note.rawValue, arguments: [note, colour.rawValue], completionHandler: { data in

@@ -35,6 +35,7 @@ enum SKConnectionStatus: String {
 /// - Parameter timeline: A `SKTimeline`
 public typealias SKTimelineHandler = (_ timeline: SKTimeline) -> Void
 public typealias SKNoteHandler = (SKNoteDescription) -> Void
+public typealias SKNotesHandler = ([SKNoteDescription]) -> Void
 internal typealias SKCompletionHandler = (SKData) -> Void
 
 // MARK:- Address Pattern Parts
