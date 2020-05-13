@@ -179,6 +179,7 @@ public final class SKTimeline: NSObject {
     }
     
     public func requestNotes(with completionHandler: SKNotesHandler? = nil) {
+        os_log("Sending Notes Request", log: .timeline, type: .info)
         client.sendMessage(with: SKAddressParts.notes.rawValue, arguments: [], completionHandler: { data in
             guard case let .notes(noteDescriptions) = data else { return }
             guard let completion = completionHandler else { return }
