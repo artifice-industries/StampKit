@@ -95,10 +95,9 @@ extension OSCMessage {
         return addressParts.count == 3 && addressParts[2] == SKAddressParts.disconnect.rawValue.dropFirst()
     }
     
-    // Address Pattern: /timeline/{Unique ID}/note or /stamp/note and needs atleast one string argument.
+    // Address Pattern: /timeline/{Unique ID}/notes or /stamp/notes.
     private var isNotes: Bool {
-        guard arguments.count >= 1, arguments[0] is String else { return false }
-        return addressPattern.hasSuffix(SKAddressParts.notes.rawValue)
+        return addressPattern.hasSuffix(SKAddressParts.notes.rawValue) && arguments.count == 0
     }
     
     // Address Pattern: /timeline/{Unique ID}/note or /stamp/note and needs atleast one string argument.
