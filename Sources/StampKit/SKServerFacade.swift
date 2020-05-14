@@ -28,12 +28,12 @@ public final class SKServerFacade: NSObject {
     let port: Int
 
     // Create a private client that we'll use for querying the list of timelines on the Stamp Server.
-    convenience init(host: String, port: Int) {
+    public convenience init(host: String, port: Int) {
         let client = SKClient(with: host, port: port, useTCP: true)
         self.init(host: host, port: port, client: client)
     }
     
-    init(host: String, port: Int, client: SKClient) {
+    internal init(host: String, port: Int, client: SKClient) {
         self.host = host
         self.port = port == 0 ? StampKitPortNumber : port
         self.name = host
