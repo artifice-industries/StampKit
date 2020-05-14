@@ -14,7 +14,7 @@ let StampKitVersion = "1.0.0"
 // MARK: Bonjour (mDNS) Constants
 let StampKitBonjourTCPServiceType: String = "_stamp._tcp."
 let StampKitBonjourServiceDomain: String = "local."
-let StampKitPortNumber: Int = 24601
+public let StampKitPortNumber: Int = 24601
 
 // MARK:- Heartbeat
 let StampKitHeartbeatMaxAttempts: Int = 5
