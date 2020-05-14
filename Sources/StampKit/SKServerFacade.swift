@@ -72,7 +72,7 @@ public final class SKServerFacade: NSObject {
         delegate?.serverDidUpdateTimelines(server: self)
     }
     
-    @objc internal func refreshTimelines() {
+    @objc public func refreshTimelines() {
         
         if !client.connect() && !client.isConnected {
             os_log("Error: Unable to connect to Stamp Server: %{PUBLIC}@:%{PUBLIC}@", log: .serverFacade, type: .error, host, "\(port)")
@@ -84,6 +84,24 @@ public final class SKServerFacade: NSObject {
             guard case .timelines(let descriptions) = data else { return }
             
             strongSelf.update(with: descriptions)
+        })
+        
+    }
+    
+    public func refreshTimelines(withCompletionHandler completionHandler: SKTimelinesHandler? = nil) {
+        
+        if !client.connect() && !client.isConnected {
+            os_log("Error: Unable to connect to Stamp Server: %{PUBLIC}@:%{PUBLIC}@", log: .serverFacade, type: .error, host, "\(port)")
+            return
+        }
+    
+        client.sendMessage(with: SKAddressParts.timelines.rawValue, arguments: [], timeline: false, completionHandler: { [weak self] data in
+            guard let strongSelf = self else { return }
+            guard case .timelines(let descriptions) = data else { return }
+            
+            strongSelf.update(with: descriptions)
+            guard let completion = completionHandler else { return }
+            completion(descriptions)
         })
         
     }
