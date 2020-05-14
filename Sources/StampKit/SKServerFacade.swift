@@ -106,6 +106,10 @@ public final class SKServerFacade: NSObject {
         
     }
     
+    public func shutdown() {
+        stop()
+    }
+    
     internal func refresh(every timeInterval: TimeInterval) {
         if refreshTimer == nil {
             refreshTimer = Timer(timeInterval: timeInterval, target: self, selector: #selector(refreshTimelines), userInfo: nil, repeats: true)
