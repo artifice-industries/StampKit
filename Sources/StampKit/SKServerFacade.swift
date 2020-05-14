@@ -45,7 +45,7 @@ public final class SKServerFacade: NSObject {
         stop()
     }
     
-    internal func stop() {
+    public func stop() {
         stopRefreshTimer()
         client.disconnect()
         timelines.removeAll()
@@ -104,10 +104,6 @@ public final class SKServerFacade: NSObject {
             completion(descriptions)
         })
         
-    }
-    
-    public func shutdown() {
-        stop()
     }
     
     internal func refresh(every timeInterval: TimeInterval) {
