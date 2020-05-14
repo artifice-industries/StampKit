@@ -72,7 +72,7 @@ public final class SKServerFacade: NSObject {
         delegate?.serverDidUpdateTimelines(server: self)
     }
     
-    @objc public func refreshTimelines() {
+    @objc internal func refreshTimelines() {
         
         if !client.connect() && !client.isConnected {
             os_log("Error: Unable to connect to Stamp Server: %{PUBLIC}@:%{PUBLIC}@", log: .serverFacade, type: .error, host, "\(port)")
@@ -88,13 +88,18 @@ public final class SKServerFacade: NSObject {
         
     }
     
+    /// A single request for the servers timelines.
+    ///
+    /// Typically used to manually retrieve a servers timelines rather than using an `SKBrowser`.
+    ///
+    /// - Parameter completionHandler: A closure that takes an array of `SKTimelineDescription` as its argument and returns `Void`.
     public func refreshTimelines(withCompletionHandler completionHandler: SKTimelinesHandler? = nil) {
         
         if !client.connect() && !client.isConnected {
             os_log("Error: Unable to connect to Stamp Server: %{PUBLIC}@:%{PUBLIC}@", log: .serverFacade, type: .error, host, "\(port)")
             return
         }
-    
+ 
         client.sendMessage(with: SKAddressParts.timelines.rawValue, arguments: [], timeline: false, completionHandler: { [weak self] data in
             guard let strongSelf = self else { return }
             guard case .timelines(let descriptions) = data else { return }
