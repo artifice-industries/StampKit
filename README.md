@@ -66,6 +66,21 @@ func browser(_: SKBrowser, didUpdateServers servers: Set<SKServerFacade>) {
 }
 ```
 
+#### Manually 
+
+If you don't want to automatically discover Stamp or in the likely instances that mDNS (bonjour) packets are dropped by managed switches, you can also do it manually by first creating a `SKServerFacade`:
+
+``` swift
+    let hostIPAddress = "10.101.1.1"
+    let receivePortNumber = StampKitPortNumber // 24601
+    let server = SKServerFacade(host: hostIPAddress, port: receivePortNumber)
+
+    server.refreshTimelines(withCompletionHandler: { timelines in
+        // Do something with the returned timelines...
+        timelines.forEach( { print($0.description) })
+    })
+```
+
 ## Authors
 
 **Sam Smallman** - [SammyTheHand](https://github.com/sammythehand)
