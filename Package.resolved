@@ -12,11 +12,20 @@
       },
       {
         "package": "OSCKit",
-        "repositoryURL": "https://github.com/SammyTheHand/OSCKit",
+        "repositoryURL": "https://github.com/SammySmallman/OSCKit",
         "state": {
           "branch": "develop",
-          "revision": "7ad9ee0579394fbebee83d0bc58999fc82141951",
+          "revision": "2b449b05952c75512944817f7e44f05feefac30c",
           "version": null
+        }
+      },
+      {
+        "package": "NetUtils",
+        "repositoryURL": "https://github.com/svdo/swift-netutils",
+        "state": {
+          "branch": null,
+          "revision": "d1251a380f41088547e4cfc8dc718a90c861a42b",
+          "version": "4.1.0"
         }
       }
     ]
