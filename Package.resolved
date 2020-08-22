@@ -14,9 +14,9 @@
         "package": "OSCKit",
         "repositoryURL": "https://github.com/SammySmallman/OSCKit",
         "state": {
-          "branch": "develop",
-          "revision": "2b449b05952c75512944817f7e44f05feefac30c",
-          "version": null
+          "branch": null,
+          "revision": "39a4bd650f437959ee90171a3751d5e81634e168",
+          "version": "2.0.1"
         }
       },
       {

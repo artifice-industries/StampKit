@@ -33,7 +33,7 @@ public final class SKResponse {
             descriptions = noteDescriptions
         }
         let string = SKPacket.jsonString(for: message.addressPattern(withApplication: true), data: .notes(descriptions))
-        let response = OSCMessage(messageWithAddressPattern: message.responseAddress(), arguments: [string])
+        let response = OSCMessage(with: message.responseAddress(), arguments: [string])
         response.readdress(to: response.addressPattern(withApplication: true))
         return response
     }
@@ -52,7 +52,7 @@ public final class SKResponse {
             noteText = note
         }
         let string = SKPacket.jsonString(for: message.addressPattern(withApplication: true), data: .note(SKNoteDescription(text: noteText, colour: noteColour, code: code)))
-        let response = OSCMessage(messageWithAddressPattern: message.responseAddress(), arguments: [string])
+        let response = OSCMessage(with: message.responseAddress(), arguments: [string])
         response.readdress(to: response.addressPattern(withApplication: true))
         return response
     }

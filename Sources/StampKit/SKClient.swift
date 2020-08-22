@@ -79,7 +79,7 @@ final class SKClient {
             self.completionHandlers[addressPattern] = handler
         }
         let fullAddress = timeline && delegate != nil ? "\(timelinePrefix)\(addressPattern)" : addressPattern
-        let message = OSCMessage(messageWithAddressPattern: fullAddress, arguments: arguments)
+        let message = OSCMessage(with: fullAddress, arguments: arguments)
         message.readdress(to: message.addressPattern(withApplication: true))
         
         if message.addressPattern != "/stamp/timelines" {

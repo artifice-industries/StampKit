@@ -123,7 +123,7 @@ final public class SKServer: NSObject {
     private func timelines(with message: OSCMessage) {
         guard let socket = message.replySocket else { return }
         let string = SKPacket.jsonString(for: message.addressPattern(withApplication: true), data: .timelines(timelines))
-        let response = OSCMessage(messageWithAddressPattern: message.responseAddress(), arguments: [string])
+        let response = OSCMessage(with: message.responseAddress(), arguments: [string])
         response.readdress(to: response.addressPattern(withApplication: true))
         socket.sendTCP(packet: response, withStreamFraming: .SLIP)
     }
@@ -135,7 +135,7 @@ final public class SKServer: NSObject {
         if timeline.hasPassword {
             guard message.arguments.count == 1, let password = message.arguments[0] as? String, password == timeline.password else {
                 let string = SKPacket.jsonString(for: message.addressPattern(withApplication: true), data: .connect(SKStatusDescription(status: SKTimelinePassword.unauthorised.rawValue, uuid: timeline.uuid)))
-                let response = OSCMessage(messageWithAddressPattern: message.responseAddress(), arguments: [string])
+                let response = OSCMessage(with: message.responseAddress(), arguments: [string])
                 response.readdress(to: response.addressPattern(withApplication: true))
                 socket.sendTCP(packet: response, withStreamFraming: .SLIP)
                 return
@@ -158,7 +158,7 @@ final public class SKServer: NSObject {
         
         // 3. Return Authorisation Message
         let string = SKPacket.jsonString(for: message.addressPattern(withApplication: true), data: .connect(SKStatusDescription(status: SKTimelinePassword.authorised.rawValue, uuid: timeline.uuid)))
-        let response = OSCMessage(messageWithAddressPattern: message.responseAddress(), arguments: [string])
+        let response = OSCMessage(with: message.responseAddress(), arguments: [string])
         response.readdress(to: response.addressPattern(withApplication: true))
         socket.sendTCP(packet: response, withStreamFraming: .SLIP)
         delegate?.server(self, didUpdateConnectedClients: connections[uuid] ?? [], toTimeline: timeline)
