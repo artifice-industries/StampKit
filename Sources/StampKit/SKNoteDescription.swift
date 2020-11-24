@@ -17,11 +17,15 @@ public struct SKNoteDescription {
     public let code: SKResponseStatusCode
     public let text: String
     public let colour: SKNoteColour
+    public let email: String?
+    public let name: String?
     
-    public init(text: String, colour: SKNoteColour, code: SKResponseStatusCode) {
+    public init(text: String, colour: SKNoteColour, code: SKResponseStatusCode, email: String? = nil, name: String? = nil) {
         self.text = text
         self.colour = colour
         self.code = code
+        self.email = email
+        self.name = name
     }
     
 }
@@ -29,7 +33,7 @@ public struct SKNoteDescription {
 extension SKNoteDescription: Codable {
     
     public enum CodingKeys: String, CodingKey {
-        case text, colour, code = "response_status_code"
+        case text, colour, code = "response_status_code", email, name
     }
     
 }
