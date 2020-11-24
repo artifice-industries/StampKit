@@ -12,6 +12,8 @@ import OSCKit
 public enum SKResponseKey: String {
     case text
     case colour
+    case email
+    case name
     case notes
 }
 
@@ -51,7 +53,9 @@ public final class SKResponse {
         } else if let note = message.arguments[0] as? String {
             noteText = note
         }
-        let string = SKPacket.jsonString(for: message.addressPattern(withApplication: true), data: .note(SKNoteDescription(text: noteText, colour: noteColour, code: code)))
+        let email: String? = dictionary?[SKResponseKey.email] as? String
+        let name: String? = dictionary?[SKResponseKey.name] as? String
+        let string = SKPacket.jsonString(for: message.addressPattern(withApplication: true), data: .note(SKNoteDescription(text: noteText, colour: noteColour, code: code, email: email, name: name)))
         let response = OSCMessage(with: message.responseAddress(), arguments: [string])
         response.readdress(to: response.addressPattern(withApplication: true))
         return response
