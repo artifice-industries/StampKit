@@ -214,7 +214,6 @@ extension SKTimeline: SKClientDelegate {
         disconnect()
         os_log("Disconnected", log: .timeline, type: .info)
         delegate?.timelineDidDisconnect(timeline: self)
-        
     }
     
     var timelineID: String { return uuid.uuidString }

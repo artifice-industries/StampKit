@@ -129,7 +129,6 @@ extension SKClient: OSCClientDelegate {
     
     func clientDidDisconnect(client: OSCClient) {
         os_log("Disconnected: %{PUBLIC}@ %{PUBLIC}@ - %{PUBLIC}@", log: .client, type: .info, client.description, client.host!, "\(client.port)")
-        
         if delegate?.disconnectOnError == true {
             disconnect()
             delegate?.timelineDidDisconnect()

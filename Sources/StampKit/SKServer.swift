@@ -65,6 +65,11 @@ final public class SKServer: NSObject {
     public func remove(timeline: SKTimelineDescription) {
         if timelines.contains(timeline), let index = timelines.firstIndex(of: timeline) {
             timelines.remove(at: index)
+            if let clients = connections[timeline.uuid] {
+                clients.forEach {
+                    $0.socket.disconnect()
+                }
+            }
         }
     }
     

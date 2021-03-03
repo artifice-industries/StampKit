@@ -12,13 +12,13 @@ import OSCKit
 public class SKClientFacade {
     
     public var isConnected: Bool { get { return socket.isConnected }}
-    private let socket: Socket
+    internal let socket: OSCSocket
     
-    init(socket: Socket) {
+    init(socket: OSCSocket) {
         self.socket = socket
     }
     
-    internal func hasSocket(socket: Socket) -> Bool {
+    internal func hasSocket(socket: OSCSocket) -> Bool {
         return self.socket.interface == socket.interface && self.socket.host == socket.host && self.socket.port == socket.port
     }
 }
